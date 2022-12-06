@@ -19,7 +19,22 @@
 								}
 							}
 						}
-					}
+					},
+                    {
+                         "Sid":"",
+                         "Effect":"Allow",
+                         "Principal":{
+                             "Service":"glue.amazonaws.com"
+                         },
+                         "Action":"sts:AssumeRole",
+                         "Condition":{
+                             "StringEquals":{
+                                 "sts:ExternalId":{
+                                     "Ref":"AWS::AccountId"
+                                 }
+                             }
+                         }
+                     }
 				]
 			},
 			"Policies":[
@@ -65,7 +80,38 @@
 							}
 						]
 					}
-				}
+				},
+                {
+                     "PolicyName":"GlueConsoleAccessPolicy",
+                     "PolicyDocument":{
+                         "Version":"2012-10-17",
+                         "Statement":[
+                             {
+                                 "Effect":"Allow",
+                                 "Action": [
+                                      "glue:*",
+                                      "cloudwatch:PutMetricData",
+                                      "cloudwatch:GetMetricData",
+                                      "cloudwatch:ListDashboards"
+                                 ],
+                                 "Resource":[
+                                     "*"
+                                 ]
+                             },
+                             {
+                                 "Effect": "Allow",
+                                 "Action": [
+                                     "logs:CreateLogGroup",
+                                     "logs:CreateLogStream",
+                                     "logs:PutLogEvents"
+                                 ],
+                                 "Resource": [
+                                     "arn:aws:logs:*:*:/aws-glue/*"
+                                 ]
+                             }
+                         ]
+                     }
+                }
 			]
 		}
 	},
@@ -154,6 +200,35 @@
 	#end
 	#end
 	#foreach( $stream in $kinesisFirehoseStreams)
+	#if ( $stream.crawlerRequired)
+        "${stream.name}Crawler": {
+            "Type" : "AWS::Glue::Crawler",
+            "Properties": {
+                "Role" : {
+                    "Fn::GetAtt":[
+                        "KinesisFirehoseLogRole",
+                        "Arn"
+                    ]
+                },
+                "DatabaseName": {
+                    "Ref":"${glueDatabaseName}GlueDatabase"
+                },
+                "Name" : "${stream.name}Crawler",
+                "TablePrefix" : "${stream.tablePrefix}",
+                "Targets" : {
+                    "S3Targets":[
+                        {
+                            "Path" : "s3://${stream.bucket}/${stream.name}/records"
+
+                        }
+                    ]
+                 },
+                "Schedule": {
+                    "ScheduleExpression": "cron(0/10 * * * ? *)"
+                 }
+            }
+        },
+                #end
 	"${stream.name}KinesisStream":{
 		"Type":"AWS::KinesisFirehose::DeliveryStream",
 		"Properties":{

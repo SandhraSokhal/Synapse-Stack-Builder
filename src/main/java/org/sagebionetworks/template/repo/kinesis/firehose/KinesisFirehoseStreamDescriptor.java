@@ -1,5 +1,7 @@
 package org.sagebionetworks.template.repo.kinesis.firehose;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Objects;
 
 public class KinesisFirehoseStreamDescriptor {
@@ -29,6 +31,10 @@ public class KinesisFirehoseStreamDescriptor {
 	private GlueTableDescriptor tableDescriptor = null;
 	// When the format is PARQUET by default we create a backup of the raw JSON data, setting this to true will disable the backup
 	private boolean backupDisabled = false;
+	// True if the crawler is required to created glue table for streamed data
+	private boolean crawlerRequired = false;
+	// If the crawler is required, then we can specify the prefix for glue table
+	private String tablePrefix = StringUtils.EMPTY;
 	
 	public String getName() {
 		return name;
@@ -110,10 +116,26 @@ public class KinesisFirehoseStreamDescriptor {
 		this.backupDisabled = backupDisabled;
 	}
 
+	public boolean isCrawlerRequired() {
+		return crawlerRequired;
+	}
+
+	public void setCrawlerRequired(boolean crawlerRequired) {
+		this.crawlerRequired = crawlerRequired;
+	}
+
+	public String getTablePrefix() {
+		return tablePrefix;
+	}
+
+	public void setTablePrefix(String tablePrefix) {
+		this.tablePrefix = tablePrefix;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(backupDisabled, bucket, bufferFlushInterval, bufferFlushSize, devOnly, format, name,
-				parameterizeDestinationByStack, partitionScheme, tableDescriptor);
+				parameterizeDestinationByStack, partitionScheme, tableDescriptor, crawlerRequired, tablePrefix);
 	}
 
 	@Override
@@ -132,7 +154,8 @@ public class KinesisFirehoseStreamDescriptor {
 				&& bufferFlushInterval == other.bufferFlushInterval && bufferFlushSize == other.bufferFlushSize && devOnly == other.devOnly
 				&& format == other.format && Objects.equals(name, other.name)
 				&& parameterizeDestinationByStack == other.parameterizeDestinationByStack
-				&& Objects.equals(partitionScheme, other.partitionScheme) && Objects.equals(tableDescriptor, other.tableDescriptor);
+				&& Objects.equals(partitionScheme, other.partitionScheme) && Objects.equals(tableDescriptor, other.tableDescriptor)
+				&& crawlerRequired == other.crawlerRequired && Objects.equals(tablePrefix, other.tablePrefix);
 	}	
 
 }
