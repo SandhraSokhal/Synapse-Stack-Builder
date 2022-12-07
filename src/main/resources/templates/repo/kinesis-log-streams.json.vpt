@@ -224,7 +224,7 @@
                     ]
                  },
                 "Schedule": {
-                    "ScheduleExpression": "cron(0/10 * * * ? *)"
+                    "ScheduleExpression": "cron(15 12 * * ? *)"
                  }
             }
         },
