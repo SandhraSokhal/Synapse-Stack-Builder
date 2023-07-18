@@ -14,16 +14,38 @@
 		"bufferFlushInterval": 900,
 		"tableDescriptor": {
 			"name": "fileDownloadsRecords",
-			"columns": {
-				"userId": "bigint",
-				"timestamp": "timestamp",
-				"projectId": "bigint",
-				"fileHandleId": "string",
-				"associateType": "string",
-				"associateId": "string",
-				"stack": "string",
-				"instance": "string"
+			"columns": [{
+				"name": "userId",
+				"type" : "bigint"
 			},
+			{
+				"name": "timestamp",
+				"type" : "timestamp"
+			},
+			{
+				"name": "projectId",
+				"type" : "bigint"
+			},
+			{
+				"name": "fileHandleId",
+				"type" : "string"
+			},
+			{
+				"name": "associateType",
+				"type" : "string"
+			},
+			{
+				"name": "associateId",
+				"type" : "string"
+			},
+			{
+				"name": "stack",
+				"type" : "string"
+			},
+			{
+				"name": "instance",
+				"type" : "string"
+			}],
 			"partitionKeys": {
 				"year": "string",
 				"month": "string",
@@ -39,16 +61,38 @@
 		"bufferFlushInterval": 900,
 		"tableDescriptor": {
 			"name": "fileUploadsRecords",
-			"columns": {
-				"userId": "bigint",
-				"timestamp": "timestamp",
-				"projectId": "bigint",
-				"fileHandleId": "string",
-				"associateType": "string",
-				"associateId": "string",
-				"stack": "string",
-				"instance": "string"
+			"columns": [{
+				"name": "userId",
+				"type" : "bigint"
 			},
+			{
+				"name": "timestamp",
+				"type" : "timestamp"
+			},
+			{
+				"name": "projectId",
+				"type" : "bigint"
+			},
+			{
+				"name": "fileHandleId",
+				"type" : "string"
+			},
+			{
+				"name": "associateType",
+				"type" : "string"
+			},
+			{
+				"name": "associateId",
+				"type" : "string"
+			},
+			{
+				"name": "stack",
+				"type" : "string"
+			},
+			{
+				"name": "instance",
+				"type" : "string"
+			}],
 			"partitionKeys": {
 				"year": "string",
 				"month": "string",
@@ -66,14 +110,30 @@
 		"backupDisabled": true,
 		"tableDescriptor": {
 			"name": "fileHandleAssociationsRecords",
-			"columns": {
-				"timestamp": "timestamp",
-				"associateType": "string",
-				"associateId": "bigint",
-				"fileHandleId": "bigint",
-				"stack": "string",
-				"instance": "string"
+			"columns": [{
+				"name": "timestamp",
+				"type" : "timestamp"
 			},
+			{
+				"name": "associateType",
+				"type" : "string"
+			},
+			{
+				"name": "associateId",
+				"type" : "string"
+			},
+			{
+				"name": "fileHandleId",
+				"type" : "string"
+			},
+			{
+				"name": "stack",
+				"type" : "string"
+			},
+			{
+				"name": "instance",
+				"type" : "string"
+			}],
 			"partitionKeys": {
 				"dt": "string"
 			},
@@ -97,18 +157,46 @@
 		"backupDisabled": true,
 		"tableDescriptor": {
 			"name": "fileHandleDataRecords",
-			"columns": {
-				"id": "bigint",
-				"createdOn": "timestamp",
-				"updatedOn": "timestamp",
-				"status": "string",
-				"isPreview": "boolean",
-				"contentSize": "bigint",
-				"bucket": "string",
-				"key": "string",
-				"stack": "string",
-				"instance": "string"
+			"columns": [{
+				"name": "id",
+				"type" : "bigint"
 			},
+			{
+				"name": "createdOn",
+				"type" : "timestamp"
+			},
+			{
+				"name": "updatedOn",
+				"type" : "timestamp"
+			},
+			{
+				"name": "status",
+				"type" : "string"
+			},
+			{
+				"name": "isPreview",
+				"type" : "boolean"
+			},
+			{
+				"name": "contentSize",
+				"type" : "bigint"
+			},
+			{
+				"name": "bucket",
+				"type" : "string"
+			},
+			{
+				"name": "key",
+				"type" : "string"
+			},
+			{
+				"name": "stack",
+				"type" : "string"
+			},
+			{
+				"name": "instance",
+				"type" : "string"
+			}],
 			"partitionKeys": {
 				"dt": "string"
 			},
@@ -133,13 +221,26 @@
 		"bufferFlushInterval": 60,
 		"tableDescriptor": {
 			"name": "testStreamRecords",
-			"columns": {
-				"id": "bigint",
-				"timestamp": "timestamp",
-				"someField": "string",
-				"stack": "string",
-				"instance": "string"
+			"columns": [{
+				"name": "id",
+				"type" : "bigint"
 			},
+			{
+				"name": "timestamp",
+				"type" : "timestamp"
+			},
+			{
+				"name": "someField",
+				"type" : "string"
+			},
+			{
+				"name": "stack",
+				"type" : "string"
+			},
+			{
+				"name": "instance",
+				"type" : "string"
+			}],
 			"partitionKeys": {
 				"dt": "string"
 			},

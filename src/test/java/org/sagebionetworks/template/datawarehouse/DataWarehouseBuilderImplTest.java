@@ -1,25 +1,7 @@
 package org.sagebionetworks.template.datawarehouse;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.sagebionetworks.template.Constants.PROPERTY_KEY_DATAWAREHOUSE_GLUE_DATABASE_NAME;
-import static org.sagebionetworks.template.Constants.PROPERTY_KEY_STACK;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.StringJoiner;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
+import com.amazonaws.services.cloudformation.model.Tag;
+import com.amazonaws.services.s3.AmazonS3;
 import org.apache.logging.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.json.JSONObject;
@@ -37,12 +19,30 @@ import org.sagebionetworks.template.LoggerFactory;
 import org.sagebionetworks.template.StackTagsProvider;
 import org.sagebionetworks.template.TemplateGuiceModule;
 import org.sagebionetworks.template.config.Configuration;
+import org.sagebionetworks.template.repo.kinesis.firehose.GlueColumn;
 import org.sagebionetworks.template.repo.kinesis.firehose.GlueTableDescriptor;
 import org.sagebionetworks.template.utils.ArtifactDownload;
 
-import com.amazonaws.services.cloudformation.model.Tag;
-import com.amazonaws.services.s3.AmazonS3;
-import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.sagebionetworks.template.Constants.PROPERTY_KEY_DATAWAREHOUSE_GLUE_DATABASE_NAME;
+import static org.sagebionetworks.template.Constants.PROPERTY_KEY_STACK;
 
 @ExtendWith(MockitoExtension.class)
 public class DataWarehouseBuilderImplTest {
@@ -105,10 +105,15 @@ public class DataWarehouseBuilderImplTest {
 		when(etlJobConfig.getGithubRepo()).thenReturn("repo");
 		when(etlJobConfig.getVersion()).thenReturn("1.0.0");
 		when(etlJobConfig.getExtraScripts()).thenReturn(List.of("utilities/utils.py"));
-		
+
+		GlueColumn column = new GlueColumn();
+		column.setName("someColumn");
+		column.setType("string");
+		column.setComment("this is test column");
+
 		GlueTableDescriptor table = new GlueTableDescriptor();
 		table.setName("someTableRef");
-		table.setColumns(ImmutableMap.of("someColumn", "string"));
+		table.setColumns(Arrays.asList(column));
 		
 		List<EtlJobDescriptor> jobs = List.of(
 			new EtlJobDescriptor()
@@ -164,7 +169,7 @@ public class DataWarehouseBuilderImplTest {
 		JSONObject tableProperty = resources.getJSONObject("someTableRefGlueTable").getJSONObject("Properties");
 		assertEquals("{\"Name\":\"someTableRef"
 				+ "\",\"StorageDescriptor\":{\"Columns\":[{\"Name\":\"someColumn\","
-				+ "\"Type\":\"string\"}],\"InputFormat\":\"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat\","
+				+ "\"Type\":\"string\",\"Comment\":\"this is test column\"}],\"InputFormat\":\"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat\","
 				+ "\"SerdeInfo\":{\"SerializationLibrary\":" + "\"org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe\"},"
 				+ "\"Compressed\":true,\"Location\":\"s3://dev.datawarehouse.sagebase.org/synapsewarehouse/someTableRef/\"},\"PartitionKeys\":[],\"TableType\":"
 				+ "\"EXTERNAL_TABLE\"}", tableProperty.getString("TableInput"));

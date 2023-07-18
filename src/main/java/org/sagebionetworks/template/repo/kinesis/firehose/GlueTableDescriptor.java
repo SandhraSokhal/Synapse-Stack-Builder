@@ -1,13 +1,15 @@
 package org.sagebionetworks.template.repo.kinesis.firehose;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class GlueTableDescriptor {
 
 	private String name;
-	private Map<String, String> columns = new HashMap<>();
+	private List<GlueColumn> columns = new ArrayList<>();
 	private Map<String, String> partitionKeys = new HashMap<>();
 	
 	// Additional custom parameters for the glue table
@@ -21,11 +23,11 @@ public class GlueTableDescriptor {
 		this.name = name;
 	}
 
-	public Map<String, String> getColumns() {
+	public List<GlueColumn> getColumns() {
 		return columns;
 	}
 
-	public void setColumns(Map<String, String> columns) {
+	public void setColumns(List<GlueColumn> columns) {
 		this.columns = columns;
 	}
 
