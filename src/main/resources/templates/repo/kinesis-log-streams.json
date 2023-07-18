@@ -46,11 +46,18 @@
 				"name": "instance",
 				"type" : "string"
 			}],
-			"partitionKeys": {
-				"year": "string",
-				"month": "string",
-				"day": "string"
-			}
+			"partitionKeys":[{
+				"name": "year",
+				"type" : "string"
+			},
+			{
+				"name": "month",
+				"type" : "string"
+			},
+			{
+				"name": "day",
+				"type" : "string"
+			}]
 		}
 	},
 	{
@@ -93,11 +100,18 @@
 				"name": "instance",
 				"type" : "string"
 			}],
-			"partitionKeys": {
-				"year": "string",
-				"month": "string",
-				"day": "string"
-			}
+			"partitionKeys":[{
+				"name": "year",
+				"type" : "string"
+			},
+			{
+				"name": "month",
+				"type" : "string"
+			},
+			{
+				"name": "day",
+				"type" : "string"
+			}]
 		}
 	},
 	{
@@ -134,9 +148,10 @@
 				"name": "instance",
 				"type" : "string"
 			}],
-			"partitionKeys": {
-				"dt": "string"
-			},
+			"partitionKeys":[{
+				"name": "dt",
+				"type" : "string"
+			}],
 			"parameters": {
 				"projection.enabled": "true",
 				"projection.dt.type": "date",
@@ -197,9 +212,10 @@
 				"name": "instance",
 				"type" : "string"
 			}],
-			"partitionKeys": {
-				"dt": "string"
-			},
+			"partitionKeys":[{
+				"name": "dt",
+				"type" : "string"
+			}],
 			"parameters": {
 				"projection.enabled": "true",
 				"projection.dt.type": "date",
@@ -241,9 +257,10 @@
 				"name": "instance",
 				"type" : "string"
 			}],
-			"partitionKeys": {
-				"dt": "string"
-			},
+			"partitionKeys":[{
+				"name": "dt",
+				"type" : "string"
+			}],
 			"parameters": {
 				"projection.enabled": "true",
 				"projection.dt.type": "date",

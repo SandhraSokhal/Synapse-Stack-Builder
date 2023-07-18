@@ -34,9 +34,11 @@
 				"type" : "timestamp",
 				"comment" : "Timestamp when user group was created"
 			}],
-			"partitionKeys": {
-				"snapshot_date": "date"
-			},
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : "date on which partition is done"
+			}],
 			"parameters": {
 				"projection.enabled": "true",
 				"projection.snapshot_date.type": "date",
