@@ -75,6 +75,21 @@
 						}
 					},
 					{
+					    "PolicyName": "GlueStudioAccess",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [{
+                                "Effect": "Allow",
+                                "Action": [
+                                    "s3:GetObject"
+                                ],
+                                "Resource":[
+                                    "arn:aws:s3:::aws-glue-studio-transforms-510798373988-prod-us-east-1/*"
+                                ]
+                            }]
+                        }
+					},
+					{
 						"PolicyName": "Log",
 						"PolicyDocument": {
 							"Version": "2012-10-17",
@@ -118,6 +133,7 @@
                 },
                 "TableInput": {
                     "Name": "$etl.tableDescriptor.name",
+                    "Description" : "$etl.tableDescriptor.description",
                     "StorageDescriptor": {
                         "Columns": [
                             #foreach($column in $etl.tableDescriptor.columns)

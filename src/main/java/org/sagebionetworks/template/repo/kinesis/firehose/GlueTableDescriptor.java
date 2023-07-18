@@ -1,5 +1,6 @@
 package org.sagebionetworks.template.repo.kinesis.firehose;
 
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.Objects;
 public class GlueTableDescriptor {
 
 	private String name;
+	private String description;
 	private List<GlueColumn> columns = new ArrayList<>();
 	private List<GlueColumn> partitionKeys = new ArrayList<>();
 	
@@ -20,6 +22,14 @@ public class GlueTableDescriptor {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public List<GlueColumn> getColumns() {
@@ -47,26 +57,16 @@ public class GlueTableDescriptor {
 	}
 
 	@Override
-	public int hashCode() {
-		return Objects.hash(columns, name, parameters, partitionKeys);
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		GlueTableDescriptor that = (GlueTableDescriptor) o;
+		return name.equals(that.name) && Objects.equals(description, that.description) && columns.equals(that.columns)
+				&& Objects.equals(partitionKeys, that.partitionKeys) && Objects.equals(parameters, that.parameters);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		GlueTableDescriptor other = (GlueTableDescriptor) obj;
-		return Objects.equals(columns, other.columns) && Objects.equals(name, other.name) && Objects.equals(parameters, other.parameters)
-				&& Objects.equals(partitionKeys, other.partitionKeys);
+	public int hashCode() {
+		return Objects.hash(name, description, columns, partitionKeys, parameters);
 	}
-
-	
-
 }

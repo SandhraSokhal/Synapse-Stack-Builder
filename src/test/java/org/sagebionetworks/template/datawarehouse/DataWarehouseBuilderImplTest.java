@@ -109,10 +109,10 @@ public class DataWarehouseBuilderImplTest {
 		GlueColumn column = new GlueColumn();
 		column.setName("someColumn");
 		column.setType("string");
-		column.setComment("this is test column");
-
+		column.setComment("This is test column");
 		GlueTableDescriptor table = new GlueTableDescriptor();
 		table.setName("someTableRef");
+		table.setDescription("Test table");
 		table.setColumns(Arrays.asList(column));
 		
 		List<EtlJobDescriptor> jobs = List.of(
@@ -168,8 +168,8 @@ public class DataWarehouseBuilderImplTest {
 
 		JSONObject tableProperty = resources.getJSONObject("someTableRefGlueTable").getJSONObject("Properties");
 		assertEquals("{\"Name\":\"someTableRef"
-				+ "\",\"StorageDescriptor\":{\"Columns\":[{\"Name\":\"someColumn\","
-				+ "\"Type\":\"string\",\"Comment\":\"this is test column\"}],\"InputFormat\":\"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat\","
+				+ "\",\"Description\":\"Test table\",\"StorageDescriptor\":{\"Columns\":[{\"Name\":\"someColumn\","
+				+ "\"Type\":\"string\",\"Comment\":\"This is test column\"}],\"InputFormat\":\"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat\","
 				+ "\"SerdeInfo\":{\"SerializationLibrary\":" + "\"org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe\"},"
 				+ "\"Compressed\":true,\"Location\":\"s3://dev.datawarehouse.sagebase.org/synapsewarehouse/someTableRef/\"},\"PartitionKeys\":[],\"TableType\":"
 				+ "\"EXTERNAL_TABLE\"}", tableProperty.getString("TableInput"));

@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+
 @ExtendWith(MockitoExtension.class)
 public class KinesisFirehoseConfigValidatorTest {
 
@@ -46,7 +47,9 @@ public class KinesisFirehoseConfigValidatorTest {
 		GlueColumn column = new GlueColumn();
 		column.setName("someColumn");
 		column.setType("string");
+
 		GlueTableDescriptor table = new GlueTableDescriptor();
+
 		table.setName("someTableRef");
 		table.setColumns(Arrays.asList(column));
 

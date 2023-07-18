@@ -1,49 +1,947 @@
 {
 	"githubRepo": "Synapse-ETL-Jobs",
-	"version": "1.22.0",
+	"version": "1.23.0",
 	"extraScripts": ["utils.py"],
 	"etlJobDescriptors":[{
-		"name": "usergroupsnapshots",
-		"description": "This job processes the user group snapshot data",
-		"scriptName": "user_group_snapshots.py",
-		"sourcePath" : "log.sagebase.org/userGroupSnapshots/",
+		"name": "processaccessrecord",
+		"description": "This job processes the access records",
+		"scriptName": "process_access_record.py",
+		"sourcePath" : "log.sagebase.org/accessRecord/",
 		"tableDescriptor": {
-			"name": "usergroupsnapshots",
+			"name": "processedaccessrecord",
+			"description" : "This is processed table",
 			"columns":[{
+				"name": "session_id",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "user_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "method",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "request_url",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "user_agent",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "host",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "origin",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "x_forwarded_for",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "via",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "thread_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "elapse_ms",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "success",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "stack",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "instance",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "vm_id",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "return_object_id",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "query_string",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "response_status",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "oauth_client_id",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "basic_auth_username",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "auth_method",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "normalized_method_signature",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "client",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "client_version",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "entity_id",
+				"type" : "bigint",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "record_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.record_date.type": "date",
+				"projection.record_date.range": "NOW-11YEARS,NOW",
+				"projection.record_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "nodesnapshots",
+		"description": "This job processes the node snapshot data",
+		"scriptName": "node_snapshots.py",
+		"sourcePath" : "log.sagebase.org/nodeSnapshots/",
+		"tableDescriptor": {
+			"name": "nodesnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
 				"name": "change_timestamp",
 				"type" : "timestamp",
-				"comment" : "Time stamp when change happened"
+				"comment" : ""
+			},
+			{
+				"name": "change_user_id",
+				"type" : "bigint",
+				"comment" : ""
 			},
 			{
 				"name": "snapshot_timestamp",
 				"type" : "timestamp",
-				"comment" : "Time stamp when snapshot was taken"
+				"comment" : ""
 			},
 			{
 				"name": "id",
 				"type" : "bigint",
-				"comment" : "Id of user group"
+				"comment" : ""
 			},
 			{
-				"name": "is_individual",
-				"type" : "boolean",
-				"comment" : "Is user group belongs to group or individual"
+				"name": "benefactor_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "project_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "parent_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "node_type",
+				"type" : "string",
+				"comment" : ""
 			},
 			{
 				"name": "created_on",
 				"type" : "timestamp",
-				"comment" : "Timestamp when user group was created"
+				"comment" : ""
+			},
+			{
+				"name": "created_by",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "modified_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "modified_by",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "version_number",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "file_handle_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "is_public",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "is_controlled",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "is_restricted",
+				"type" : "boolean",
+				"comment" : ""
 			}],
 			"partitionKeys":[{
 				"name": "snapshot_date",
 				"type" : "date",
-				"comment" : "date on which partition is done"
+				"comment" : ""
 			}],
 			"parameters": {
 				"projection.enabled": "true",
 				"projection.snapshot_date.type": "date",
 				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
 				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "filesnapshots",
+		"description": "This job processes the file snapshot data",
+		"scriptName": "file_snapshots.py",
+		"sourcePath" : "log.sagebase.org/fileSnapshots/",
+		"tableDescriptor": {
+			"name": "filesnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "change_user_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "created_by",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "created_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "modified_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "concrete_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "content_md5",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "content_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "file_name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "storage_location_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "content_size",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "bucket",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "key",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "preview_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "is_preview",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "status",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "teamsnapshots",
+		"description": "This job processes the team snapshot data",
+		"scriptName": "team_snapshots.py",
+		"sourcePath" : "log.sagebase.org/teamSnapshots/",
+		"tableDescriptor": {
+			"name": "teamsnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "can_public_join",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "created_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "created_by",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "modified_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "modified_by",
+				"type" : "bigint",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "teammembersnapshots",
+		"description": "This job processes the team member snapshot data",
+		"scriptName": "team_member_snapshots.py",
+		"sourcePath" : "log.sagebase.org/teamMemberSnapshots/",
+		"tableDescriptor": {
+			"name": "teammembersnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "team_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "member_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "is_admin",
+				"type" : "boolean",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "usergroupsnapshots",
+		"description": "This job processes the user group snapshot data",
+		"scriptName": "user_group_snapshots.py",
+		"sourcePath" : "log.sagebase.org/userGroupSnapshots/",
+		"tableDescriptor": {
+			"name": "usergroupsnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "is_individual",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "created_on",
+				"type" : "timestamp",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "userprofilesnapshots",
+		"description": "This job processes the user profile snapshot data",
+		"scriptName": "user_profile_snapshots.py",
+		"sourcePath" : "log.sagebase.org/userProfileSnapshots/",
+		"tableDescriptor": {
+			"name": "userprofilesnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "user_name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "first_name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "last_name",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "email",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "location",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "company",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "position",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-10YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "fileuploadrecords",
+		"description": "This job processes the file upload records",
+		"scriptName": "file_event_records.py",
+		"sourcePath" : "log.sagebase.org/fileUploadRecords/",
+		"tableDescriptor": {
+			"name": "fileuploadrecords",
+			"description" : "",
+			"columns":[{
+				"name": "timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "user_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "project_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "file_handle_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "association_object_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "association_object_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "stack",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "instance",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "record_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.record_date.type": "date",
+				"projection.record_date.range": "NOW-5YEARS,NOW",
+				"projection.record_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "filedownloadrecords",
+		"description": "This job processes the file download records",
+		"scriptName": "file_event_records.py",
+		"sourcePath" : "log.sagebase.org/fileDownloadRecords/",
+		"tableDescriptor": {
+			"name": "filedownloadrecords",
+			"description" : "",
+			"columns":[{
+				"name": "timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "user_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "project_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "file_handle_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "association_object_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "association_object_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "stack",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "instance",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "record_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.record_date.type": "date",
+				"projection.record_date.range": "NOW-5YEARS,NOW",
+				"projection.record_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "aclsnapshots",
+		"description": "This job processes the acl snapshot data",
+		"scriptName": "acl_snapshots.py",
+		"sourcePath" : "log.sagebase.org/aclSnapshots/",
+		"tableDescriptor": {
+			"name": "aclsnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "change_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "owner_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "owner_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "created_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "resource_access",
+				"type" : "array<struct<principalId:bigint,accessType:array<string>>>",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-6YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "verificationsubmissionsnapshots",
+		"description": "This job processes the verification submission snapshot data",
+		"scriptName": "verification_submission_snapshots.py",
+		"sourcePath" : "log.sagebase.org/verificationSubmissionSnapshots/",
+		"tableDescriptor": {
+			"name": "verificationsubmissionsnapshots",
+			"description" : "",
+			"columns":[{
+				"name": "change_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "change_type",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "snapshot_timestamp",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "created_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "created_by",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "state_history",
+				"type" : "array<struct<createdOn:bigint,createdBy:string,state:string>>",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "snapshot_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.snapshot_date.type": "date",
+				"projection.snapshot_date.range": "NOW-6YEARS,NOW",
+				"projection.snapshot_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "certifiedquizrecords",
+		"description": "This job processes the user's certified quiz records",
+		"scriptName": "certified_quiz_records.py",
+		"sourcePath" : "log.sagebase.org/certifiedUserPassingRecords/",
+		"tableDescriptor": {
+			"name": "certifiedquizrecords",
+			"description" : "",
+			"columns":[{
+				"name": "response_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "user_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "passed",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "passed_on",
+				"type" : "timestamp",
+				"comment" : ""
+			},
+			{
+				"name": "stack",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "instance",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "record_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.record_date.type": "date",
+				"projection.record_date.range": "NOW-6YEARS,NOW",
+				"projection.record_date.format": "yyyy-MM-dd"
+			}
+		}
+	},
+	{
+		"name": "certifiedquizquestionrecords",
+		"description": "This job processes the user's certified quiz question records",
+		"scriptName": "certified_quiz_question_records.py",
+		"sourcePath" : "log.sagebase.org/certifiedUserPassingRecords/",
+		"tableDescriptor": {
+			"name": "certifiedquizquestionrecords",
+			"description" : "",
+			"columns":[{
+				"name": "response_id",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "question_index",
+				"type" : "bigint",
+				"comment" : ""
+			},
+			{
+				"name": "is_correct",
+				"type" : "boolean",
+				"comment" : ""
+			},
+			{
+				"name": "stack",
+				"type" : "string",
+				"comment" : ""
+			},
+			{
+				"name": "instance",
+				"type" : "string",
+				"comment" : ""
+			}],
+			"partitionKeys":[{
+				"name": "record_date",
+				"type" : "date",
+				"comment" : ""
+			}],
+			"parameters": {
+				"projection.enabled": "true",
+				"projection.record_date.type": "date",
+				"projection.record_date.range": "NOW-6YEARS,NOW",
+				"projection.record_date.format": "yyyy-MM-dd"
 			}
 		}
 	}]
