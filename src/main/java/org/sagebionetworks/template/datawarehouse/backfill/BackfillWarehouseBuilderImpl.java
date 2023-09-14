@@ -39,7 +39,7 @@ import static org.sagebionetworks.template.Constants.STACK;
 
 public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String S3_GLUE_BUCKET = "aws-glue.sagebase.org";
-    public static final String TEMPLATE_ETL_GLUE_JOB_RESOURCES = "templates/datewarehouse/backfill-etl-jobs-template.json.vpt";
+    public static final String TEMPLATE_ETL_GLUE_JOB_RESOURCES = "templates/datewarehouse/backfill/backfill-etl-jobs-template.json.vpt";
     private static final String S3_BACKFILL_KEY_PATH_TPL = "scripts/backfill/";
     private static final String GITHUB_URL_TPL = "https://codeload.github.com/Sage-Bionetworks/%s/zip/refs/tags/v%s";
     private static final String SCRIPT_PATH_TPL = "%s-%s/src/scripts/backfill_jobs/";
