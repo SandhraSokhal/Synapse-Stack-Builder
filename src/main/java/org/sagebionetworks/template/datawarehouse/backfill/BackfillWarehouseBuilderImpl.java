@@ -185,7 +185,11 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
         for(String newPath: s3ObjectResult.getCommonPrefixes()) {
             System.out.println(newPath);
-            getListObjectV2(newPath.substring(0, newPath.length() - 1), bucketName);
+            final ListObjectsV2Request listObjectsV2Request2 = new ListObjectsV2Request().withPrefix(newPath).withBucketName(bucketName).withDelimiter("/");
+            final ListObjectsV2Result s3ObjectResult2 = s3Client.listObjectsV2(listObjectsV2Request2);
+            for(String path2 : s3ObjectResult2.getCommonPrefixes()) {
+                System.out.println("path2: "+path2);
+            }
         }
     }
     private String getS3PartitionLocation(final String s3Localtion, final String releaseNumber, final String recordDate, final String midPath) {
