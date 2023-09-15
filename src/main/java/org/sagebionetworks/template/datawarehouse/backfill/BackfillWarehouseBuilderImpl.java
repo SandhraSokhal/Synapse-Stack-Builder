@@ -184,6 +184,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private GetTableResult getCurrentSchema(final String databaseName, final String tableName) {
         System.out.println("Creating current Schema with databaseName: "+databaseName +" and tableName: " +tableName);
         final GetTableRequest getTableRequest = new GetTableRequest().withDatabaseName(databaseName).withName(tableName);
+        if(awsGlue == null) {
+            System.out.println("AWS Glue is null");
+        }
         return awsGlue.getTable(getTableRequest);
     }
     private StorageDescriptor createStorageDescriptor(final String databaseName, final String tableName,
