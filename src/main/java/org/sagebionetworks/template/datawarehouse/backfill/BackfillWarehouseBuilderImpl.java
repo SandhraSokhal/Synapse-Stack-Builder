@@ -10,6 +10,7 @@ import com.amazonaws.services.glue.model.PartitionInput;
 import com.amazonaws.services.glue.model.StartJobRunRequest;
 import com.amazonaws.services.glue.model.StorageDescriptor;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -170,8 +171,11 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
 */
         System.out.println("Creating Partition Schema ");
-        ListObjectsV2Result result = s3Client.listObjectsV2("s3://dev.snapshot.record.sagebase.org");
-        result.getCommonPrefixes().forEach(name -> System.out.println(name));
+        ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("dev.snapshot.record.sagebase.org");
+        ListObjectsV2Result result = s3Client.listObjectsV2(listObjectsV2Request);
+        for(String prefix: result.getCommonPrefixes()) {
+            System.out.println("Prefix: "+prefix);
+        }
         createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
                 "2023-08-29", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
         createBatchPartition(databaseName, "filedownloadscsv", "000000467",
