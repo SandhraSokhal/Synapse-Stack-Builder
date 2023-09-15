@@ -171,12 +171,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
 */
         System.out.println("Creating Partition Schema ");
-        ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("dev.snapshot.record.sagebase.org").withDelimiter("/");
-        ListObjectsV2Result result = s3Client.listObjectsV2(listObjectsV2Request);
-        System.out.println("Common Prefix Size: "+result.getCommonPrefixes().size());
-        for(String prefix: result.getCommonPrefixes()) {
-            System.out.println("Prefix: "+prefix);
-        }
+        getListObjectV2("", "dev.snapshot.record.sagebase.org");
+
         createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
                 "2023-08-29", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
         createBatchPartition(databaseName, "filedownloadscsv", "000000467",
@@ -184,6 +180,14 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Partitions created successfully!");
     }
 
+    public void getListObjectV2(final String prefix, final String bucketName) {
+        final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
+        final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
+        for(String newPath: s3ObjectResult.getCommonPrefixes()) {
+            System.out.println(newPath);
+            getListObjectV2(newPath.substring(0, newPath.length() - 1), bucketName);
+        }
+    }
     private String getS3PartitionLocation(final String s3Localtion, final String releaseNumber, final String recordDate, final String midPath) {
         final String partitionLocation =  String.join("/", s3Localtion, releaseNumber, midPath, recordDate);
         System.out.println("Partition Location: "+partitionLocation);
