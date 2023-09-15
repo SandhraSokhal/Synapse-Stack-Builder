@@ -189,8 +189,10 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
             int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
             final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
-            final String recordDate = prefix.substring(prefix.indexOf("/", midDelimiterIndex+1), prefix.length()-1 );
-            System.out.println(String.join("  ", releaseNumber, midPath, recordDate));
+            final int lastDelimiterIndex = prefix.indexOf("/", midDelimiterIndex+1);
+
+            final String recordDate = prefix.substring(lastDelimiterIndex, prefix.length()-1 );
+            System.out.println(prefix+" -> "+lastDelimiterIndex+" --> " + String.join("  ", releaseNumber, midPath, recordDate));
         }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
