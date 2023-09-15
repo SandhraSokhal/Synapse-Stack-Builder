@@ -2,6 +2,8 @@ package org.sagebionetworks.template;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.athena.AmazonAthena;
+import com.amazonaws.services.athena.AmazonAthenaClientBuilder;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
 import com.amazonaws.services.ec2.AmazonEC2;
@@ -204,6 +206,14 @@ public class TemplateGuiceModule extends com.google.inject.AbstractModule {
 	@Provides
 	public AWSGlue provideAmazonAWSGlueClient() {
 		AWSGlueClientBuilder builder = AWSGlueClientBuilder.standard();
+		builder.withCredentials(new DefaultAWSCredentialsProviderChain());
+		builder.withRegion(Regions.US_EAST_1);
+		return builder.build();
+	}
+
+	@Provides
+	public AmazonAthena provideAmazonAmazonAthenaClient() {
+		AmazonAthenaClientBuilder builder = AmazonAthenaClientBuilder.standard();
 		builder.withCredentials(new DefaultAWSCredentialsProviderChain());
 		builder.withRegion(Regions.US_EAST_1);
 		return builder.build();

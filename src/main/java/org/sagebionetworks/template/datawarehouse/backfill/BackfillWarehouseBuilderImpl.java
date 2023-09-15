@@ -2,6 +2,19 @@ package org.sagebionetworks.template.datawarehouse.backfill;
 
 import com.amazonaws.internal.ReleasableInputStream;
 import com.amazonaws.services.athena.AmazonAthena;
+import com.amazonaws.services.athena.model.Datum;
+import com.amazonaws.services.athena.model.GetQueryExecutionRequest;
+import com.amazonaws.services.athena.model.GetQueryExecutionResult;
+import com.amazonaws.services.athena.model.GetQueryResultsRequest;
+import com.amazonaws.services.athena.model.GetQueryResultsResult;
+import com.amazonaws.services.athena.model.QueryExecutionContext;
+import com.amazonaws.services.athena.model.QueryExecutionState;
+import com.amazonaws.services.athena.model.QueryExecutionStatus;
+import com.amazonaws.services.athena.model.ResultConfiguration;
+import com.amazonaws.services.athena.model.ResultSetMetadata;
+import com.amazonaws.services.athena.model.Row;
+import com.amazonaws.services.athena.model.StartQueryExecutionRequest;
+import com.amazonaws.services.athena.model.StartQueryExecutionResult;
 import com.amazonaws.services.glue.AWSGlue;
 import com.amazonaws.services.glue.model.BatchCreatePartitionRequest;
 import com.amazonaws.services.glue.model.GetTableRequest;
@@ -58,7 +71,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String SCRIPT_PATH_TPL = "%s-%s/src/scripts/backfill_jobs/";
     private static final String GS_EXPLODE_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_explode.py";
     private static final String GS_COMMON_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_common.py";
-
+    private static final Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
+            entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
+            entry("filedownloadrecord","filedownloadscsv"));
     private EtlJobConfig etlJobConfig;
     private ArtifactDownload downloader;
     private Configuration config;
@@ -74,7 +89,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     @Inject
     public BackfillWarehouseBuilderImpl(CloudFormationClient cloudFormationClient, VelocityEngine velocityEngine,
                                     Configuration config, LoggerFactory loggerFactory,
-                                    StackTagsProvider tagsProvider, EtlJobConfig etlJobConfig, ArtifactDownload downloader, AmazonS3 s3Client, AWSGlue awsGlue) {
+                                    StackTagsProvider tagsProvider, EtlJobConfig etlJobConfig, ArtifactDownload downloader,
+                                        AmazonS3 s3Client, AWSGlue awsGlue, AmazonAthena athena) {
         this.cloudFormationClient = cloudFormationClient;
         this.velocityEngine = velocityEngine;
         this.config = config;
@@ -84,6 +100,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.downloader = downloader;
         this.s3Client = s3Client;
         this.awsGlue = awsGlue;
+        this.athena = athena;
     }
 
     // copy scripts to s3
@@ -127,86 +144,109 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         // Format the JSON
         resultJSON = templateJson.toString(JSON_INDENT);
         this.logger.info(resultJSON);
-        // create or update the template
+        // create or update the stack
         String stackName = new StringJoiner("-").add(stack).add(databaseName).add("backfill-etl-jobs").toString();
         this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
 
-        String partitionField1Value = "release_number";
-        String partitionField2Value = "record_date";
-        java.util.List<String> partitionField1Values = new java.util.ArrayList<>();
-        partitionField1Values.add(partitionField1Value);
+       // getListObjectV2("", stack+ ".snapshot.record.sagebase.org", databaseName);
+        getAthenaResult();
 
-
-        java.util.List<String> partitionField2Values = new java.util.ArrayList<>();
-        partitionField2Values.add(partitionField2Value);
-
-        // Create PartitionInput objects for each partition field
-        PartitionInput partitionInput1 = new PartitionInput()
-                .withValues(partitionField1Values);
-
-        PartitionInput partitionInput2 = new PartitionInput()
-                .withValues(partitionField2Values);
-        final String bucketName = "";
-
-        // Specify the location of the partition
-        String partitionLocation = "s3://your-bucket-name/path/to/partition";
-
-        // Create a StorageDescriptor for the partition
-/*
-
-        // Create a Partition object with both partition fields
-        Partition partition = new Partition()
-                .withValues(partitionField1Values)
-                .withStorageDescriptor(storageDescriptor);
-
-        // Create a BatchCreatePartitionRequest
-        BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
-                .withDatabaseName(databaseName)
-                .withTableName("filedownloadscsv")
-                .withPartitionInputList(partitionInput1, partitionInput2); // Add both PartitionInput objects
-
-        // Create the partitions
-        awsGlue.batchCreatePartition(batchCreatePartitionRequest);
-*/
-        Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
-                entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
-                entry("filedownloadrecord","filedownloadscsv"));
-        System.out.println("Creating Partition Schema ");
-        getListObjectV2("", "dev.snapshot.record.sagebase.org", databaseName, tableToMidMap);
-/*
-        createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
-                "2023-08-29", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
-        createBatchPartition(databaseName, "filedownloadscsv", "000000467",
-                "2023-08-29", "filedownloadrecord", "s3://dev.snapshot.record.sagebase.org");
-
- */
         System.out.println("Partitions created successfully!");
     }
 
-    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName, final Map<String, String> map) {
+    private void getAthenaResult(){
+        String query = "select * from dev469filedownloadsrecords limit 5";
+        QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
+
+        // Create a ResultConfiguration
+        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://dev.log.sagebase.org/accessRecordtest/");
+
+        // Create a StartQueryExecutionRequest
+        StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
+                .withQueryString(query)
+                .withQueryExecutionContext(queryExecutionContext)
+                .withResultConfiguration(resultConfiguration);
+
+        // Start the query execution
+        StartQueryExecutionResult startQueryExecutionResult = athena.startQueryExecution(startQueryExecutionRequest);
+
+        // Get the query execution ID
+        String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
+
+        // Wait for the query to complete (optional)
+        waitForQueryCompletion(athena, queryExecutionId);
+
+        getQueryResults(athena, queryExecutionId);
+    }
+
+    private static void waitForQueryCompletion(AmazonAthena athenaClient, String queryExecutionId) {
+        GetQueryExecutionRequest getQueryExecutionRequest = new GetQueryExecutionRequest()
+                .withQueryExecutionId(queryExecutionId);
+
+        GetQueryExecutionResult queryExecution;
+        QueryExecutionStatus status;
+
+        do {
+            queryExecution = athenaClient.getQueryExecution(getQueryExecutionRequest);
+            status = queryExecution.getQueryExecution().getStatus();
+            // Sleep for a few seconds before checking the status again
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } while (!status.getState().equals(
+                QueryExecutionState.SUCCEEDED) && !status.getState().equals(QueryExecutionState.FAILED));
+
+        System.out.println("Query execution status: " + status.getState());
+    }
+
+    private static void getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
+        GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
+                .withQueryExecutionId(queryExecutionId);
+
+        GetQueryResultsResult queryResultsResponse = athenaClient.getQueryResults(getQueryResultsRequest);
+
+
+        ResultSetMetadata metadata = queryResultsResponse.getResultSet().getResultSetMetadata();
+
+        for(int i = 0; i< metadata.getColumnInfo().size(); i++) {
+            System.out.print(metadata.getColumnInfo().get(i)+" \t");
+        }
+        System.out.println();
+        // Process and print the results
+        for (Row row : queryResultsResponse.getResultSet().getRows()) {
+            for (Datum datum : row.getData()) {
+                System.out.print(datum.getVarCharValue() + "\t");
+            }
+            System.out.println();
+        }
+    }
+    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
         if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
-            getBatchPartitionParametersAndCreateAthenaPartition(prefix, databaseName, map, bucketName);
+            getBatchPartitionParametersAndCreateAthenaPartition(prefix, databaseName, bucketName);
+            return;
         }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
-                getListObjectV2(newPath, bucketName,databaseName,map);
+                getListObjectV2(newPath, bucketName,databaseName);
             }
         }
     }
 
-    public void getBatchPartitionParametersAndCreateAthenaPartition(final String prefix, final String databaseName,
-                                                                    final Map<String, String> map, final String bucketName) {
+    public void getBatchPartitionParametersAndCreateAthenaPartition(final String prefix, final String databaseName, final String bucketName) {
         int firstDelimiterIndex = prefix.indexOf("/");
         int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
-        final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
+        final String releaseNumber = prefix.substring(0, firstDelimiterIndex);
         final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
         final String recordDate = prefix.substring(midDelimiterIndex+1, prefix.length()-1 );
-        createBatchPartition(databaseName, map.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
+        createBatchPartition(databaseName, tableToMidMap.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
     }
+
     public boolean checkToIterate(final String prefix, final String newPath) {
         if(prefix.length() == 0 && newPath.startsWith("000000")) return true;
         return newPath.contains("bulkfiledownloadresponse") || newPath.contains("filedownloadrecord");
