@@ -188,14 +188,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     public void getListObjectV2(final String prefix, final String bucketName, final String databaseName, final Map<String, String> map) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
-
         if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
-            int firstDelimiterIndex = prefix.indexOf("/");
-            int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
-            final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
-            final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
-            final String recordDate = prefix.substring(midDelimiterIndex+1, prefix.length()-1 );
-            createBatchPartition(databaseName, map.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
+            getBatchPartitionParametersAndCreateAthenaPartition(prefix, databaseName, map, bucketName);
         }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
@@ -204,6 +198,15 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         }
     }
 
+    public void getBatchPartitionParametersAndCreateAthenaPartition(final String prefix, final String databaseName,
+                                                                    final Map<String, String> map, final String bucketName) {
+        int firstDelimiterIndex = prefix.indexOf("/");
+        int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
+        final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
+        final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
+        final String recordDate = prefix.substring(midDelimiterIndex+1, prefix.length()-1 );
+        createBatchPartition(databaseName, map.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
+    }
     public boolean checkToIterate(final String prefix, final String newPath) {
         if(prefix.length() == 0 && newPath.startsWith("000000")) return true;
         return newPath.contains("bulkfiledownloadresponse") || newPath.contains("filedownloadrecord");
