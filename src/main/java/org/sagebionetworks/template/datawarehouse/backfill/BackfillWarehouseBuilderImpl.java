@@ -170,8 +170,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 */
         System.out.println("Creating Partition Schema ");
 
-        createBatchPartition(databaseName, "bulkfiledownloadscsv", "sandhra2",
-                "2023-09-14", "sandhra", "s3://dev.snapshot.record.sagebase.org");
+        createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
+                "2023-09-14", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
 
         System.out.println("Partitions created successfully!");
     }
