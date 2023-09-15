@@ -1,6 +1,13 @@
 package org.sagebionetworks.template.datawarehouse.backfill;
 
 import com.amazonaws.internal.ReleasableInputStream;
+import com.amazonaws.services.athena.AmazonAthena;
+import com.amazonaws.services.glue.AWSGlue;
+import com.amazonaws.services.glue.model.BatchCreatePartitionRequest;
+import com.amazonaws.services.glue.model.GetTableRequest;
+import com.amazonaws.services.glue.model.GetTableResult;
+import com.amazonaws.services.glue.model.PartitionInput;
+import com.amazonaws.services.glue.model.StorageDescriptor;
 import com.amazonaws.services.s3.AmazonS3;
 import com.google.inject.Inject;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +62,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private AmazonS3 s3Client;
     private CloudFormationClient cloudFormationClient;
     private StackTagsProvider tagsProvider;
+    private AWSGlue awsGlue;
+    private AmazonAthena athena;
 
     @Inject
     public BackfillWarehouseBuilderImpl(CloudFormationClient cloudFormationClient, VelocityEngine velocityEngine,
@@ -94,7 +103,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         context.put(EXCEPTION_THROWER, new VelocityExceptionThrower());
         context.put(STACK, stack);
         context.put("scriptLocationPrefix", scriptLocationPrefix);
-        String utilscript = scriptLocationPrefix + "backfill_utils.py";
+        String utilscript = "s3://"+ scriptLocationPrefix + "backfill_utils.py";
         List<String> extraScripts = new ArrayList<>();
         extraScripts.add(utilscript);
         extraScripts.add(GS_EXPLODE_SCRIPT);
@@ -116,8 +125,93 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
+
+        String partitionField1Value = "release_number";
+        String partitionField2Value = "record_date";
+        java.util.List<String> partitionField1Values = new java.util.ArrayList<>();
+        partitionField1Values.add(partitionField1Value);
+
+
+        java.util.List<String> partitionField2Values = new java.util.ArrayList<>();
+        partitionField2Values.add(partitionField2Value);
+
+        // Create PartitionInput objects for each partition field
+        PartitionInput partitionInput1 = new PartitionInput()
+                .withValues(partitionField1Values);
+
+        PartitionInput partitionInput2 = new PartitionInput()
+                .withValues(partitionField2Values);
+        final String bucketName = "";
+
+        // Specify the location of the partition
+        String partitionLocation = "s3://your-bucket-name/path/to/partition";
+
+        // Create a StorageDescriptor for the partition
+/*
+
+        // Create a Partition object with both partition fields
+        Partition partition = new Partition()
+                .withValues(partitionField1Values)
+                .withStorageDescriptor(storageDescriptor);
+
+        // Create a BatchCreatePartitionRequest
+        BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
+                .withDatabaseName(databaseName)
+                .withTableName("filedownloadscsv")
+                .withPartitionInputList(partitionInput1, partitionInput2); // Add both PartitionInput objects
+
+        // Create the partitions
+        awsGlue.batchCreatePartition(batchCreatePartitionRequest);
+*/
+        System.out.println("Creating Partition Schema ");
+
+        createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000400",
+                "2023-09-14", "sandhra", "s3://dev.snapshot.record.sagebase.org");
+
+        System.out.println("Partitions created successfully!");
     }
 
+    private String getS3PartitionLocation(final String s3Localtion, final String releaseNumber, final String recordDate, final String midPath) {
+        final String partitionLocation =  String.join("/", s3Localtion, releaseNumber, midPath, recordDate);
+        System.out.println("Partition Location: "+partitionLocation);
+        return partitionLocation;
+    }
+
+    private GetTableResult getCurrentSchema(final String databaseName, final String tableName) {
+        final GetTableRequest getTableRequest = new GetTableRequest().withDatabaseName(databaseName).withName(tableName);
+        return awsGlue.getTable(getTableRequest);
+    }
+    private StorageDescriptor createStorageDescriptor(final String databaseName, final String tableName,
+                                                      final String releaseNumber, final String recordDate,
+                                                      final String midPath, final String s3Location) {
+        System.out.println("Creating Storage Descriptor");
+        final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
+        System.out.println("Current Table Schema: "+ getTableResult.toString());
+        final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
+        return new StorageDescriptor()
+                .withLocation(getS3PartitionLocation(s3Location,releaseNumber, recordDate, midPath))
+                .withInputFormat(currentTableStorageDescriptor.getInputFormat())
+                .withOutputFormat(currentTableStorageDescriptor.getOutputFormat())
+                .withSerdeInfo(currentTableStorageDescriptor.getSerdeInfo());
+
+    }
+
+    private void createBatchPartition(final String databaseName, final String tableName, final String releaseNumber,
+                                      final String recordDate, final String midPath, final String s3Location) {
+        final StorageDescriptor storageDescriptor = createStorageDescriptor(databaseName, tableName, releaseNumber,
+                                                                            recordDate, midPath, s3Location);
+        System.out.println("Completed Storage Descriptor");
+        final PartitionInput partitionInput = new PartitionInput()
+                                                .withValues(releaseNumber,recordDate)
+                                                .withStorageDescriptor(storageDescriptor);
+        System.out.println("Creating BatchPartitionRequest");
+        final BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
+                                                                            .withDatabaseName(databaseName)
+                                                                            .withTableName(tableName)
+                                                                            .withPartitionInputList(partitionInput);
+        awsGlue.batchCreatePartition(batchCreatePartitionRequest);
+        System.out.println("Partition created successfully");
+    }
     String copyArtifactFromGithub(String bucket) {
         String githubRepo = "Synapse-ETL-Jobs";
         String version = "1.30.0";

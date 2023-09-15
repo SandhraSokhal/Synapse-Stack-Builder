@@ -190,6 +190,9 @@
 				},
 				"Description": "${etl.description}",
 				"GlueVersion": "4.0",
+				"ExecutionProperty" :{
+                    "MaxConcurrentRuns" : 1000
+				},
 				"Name": "${glueDatabaseName}_${etl.name}",
 				"Role": {
 				    "Fn::GetAtt":[
