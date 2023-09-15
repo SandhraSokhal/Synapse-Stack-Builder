@@ -152,12 +152,12 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 .withCapabilities(CAPABILITY_NAMED_IAM));
 
        // getListObjectV2("", stack+ ".snapshot.record.sagebase.org", databaseName);
-        getAthenaResult();
-
+       // Map<String, List<String>> glueJobInputList = getAthenaResult();
+        startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records","000000467","dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads","2023-01-01","2023-12-31");
         System.out.println("Partitions created successfully!");
     }
 
-    private void getAthenaResult(){
+    private Map<String, List<String>> getAthenaResult(){
         String query = "select instance,min(year) as minyear, max(year) as maxyear, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year in('2022','2023') group by instance ";
         QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
 
@@ -178,7 +178,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("execution id is : "+ queryExecutionId);
         // Wait for the query to complete (optional)
         waitForQueryCompletion(athena, queryExecutionId);
-        getQueryResults(athena, queryExecutionId);
+        return getQueryResults(athena, queryExecutionId);
     }
 
     private static void waitForQueryCompletion(AmazonAthena athenaClient, String queryExecutionId) {
@@ -203,7 +203,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Query execution status: " + status.getState());
     }
 
-    private static void getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
+    private static Map<String, List<String>> getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
         GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
                 .withQueryExecutionId(queryExecutionId);
 
@@ -235,6 +235,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         for (Map.Entry<String, List<String>> entry : inputs.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue().toString());
         }
+        return inputs;
     }
     private static String getColumnValue(Datum datum) {
         if (datum != null && datum.getVarCharValue() != null) {
@@ -307,20 +308,19 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Partition created successfully");
     }
 
-    private void startAWSGLueJob(final String jobName, final String releaseNumber, final String stack, final String fileDownloadType,
-                                 final String sourceDataBaseName, final String sourceTableName,
-                                 final String destinationDatabaseName, final String destinationTableName,
-                                 final String startDate, final String endDate) {
+    private void startAWSGLueJob(final String jobName, final String releaseNumber, final String stack, final String dataBaseName,
+                                 final String sourceBulkTableName, final String sourceFileTableName,
+                                 final String destinationTableName, final String startDate, final String endDate) {
         final Map<String, String> argumentMap = ImmutableMap.ofEntries(
-                entry("--DESTINATION_DATABASE_NAME", destinationDatabaseName),
+                entry("--DESTINATION_DATABASE_NAME", dataBaseName),
                 entry("--DESTINATION_TABLE_NAME",destinationTableName),
-                entry("--SOURCE_DATABASE_NAME",sourceDataBaseName),
-                entry("--SOURCE_TABLE_NAME",sourceTableName),
+                entry("--SOURCE_DATABASE_NAME",dataBaseName),
+                entry("--SOURCE_BULK_TABLE_NAME",sourceBulkTableName),
+                entry("--SOURCE_FILE_TABLE_NAME",sourceFileTableName),
                 entry("--START_DATE",startDate),
                 entry("--END_DATE",endDate),
                 entry("--RELEASE_NUMBER",releaseNumber),
-                entry("--STACK",stack),
-                entry("--FILE_DOWNLOAD_TYPE",fileDownloadType));
+                entry("--STACK",stack));
         final StartJobRunRequest startJobRunRequest = new StartJobRunRequest().withArguments(argumentMap).withJobName(jobName);
         System.out.println("Starting Glue Job");
         awsGlue.startJobRun(startJobRunRequest);
