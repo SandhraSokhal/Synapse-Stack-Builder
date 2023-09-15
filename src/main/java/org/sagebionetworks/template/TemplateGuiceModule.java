@@ -10,6 +10,8 @@ import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalk;
 import com.amazonaws.services.elasticbeanstalk.AWSElasticBeanstalkClientBuilder;
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder;
+import com.amazonaws.services.glue.AWSGlue;
+import com.amazonaws.services.glue.AWSGlueClientBuilder;
 import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
@@ -194,6 +196,14 @@ public class TemplateGuiceModule extends com.google.inject.AbstractModule {
 	@Provides
 	public AmazonS3 provideAmazonS3Client() {
 		AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard();
+		builder.withCredentials(new DefaultAWSCredentialsProviderChain());
+		builder.withRegion(Regions.US_EAST_1);
+		return builder.build();
+	}
+
+	@Provides
+	public AWSGlue provideAmazonAWSGlueClient() {
+		AWSGlueClientBuilder builder = AWSGlueClientBuilder.standard();
 		builder.withCredentials(new DefaultAWSCredentialsProviderChain());
 		builder.withRegion(Regions.US_EAST_1);
 		return builder.build();
