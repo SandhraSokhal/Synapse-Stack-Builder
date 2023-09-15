@@ -174,10 +174,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 
         // Get the query execution ID
         String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
-
+        System.out.println("execution id is : "+ queryExecutionId);
         // Wait for the query to complete (optional)
         waitForQueryCompletion(athena, queryExecutionId);
-
         getQueryResults(athena, queryExecutionId);
     }
 
@@ -198,8 +197,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        } while (!status.getState().equals(
-                QueryExecutionState.SUCCEEDED) && !status.getState().equals(QueryExecutionState.FAILED));
+        } while (!(status.getState().equals(QueryExecutionState.SUCCEEDED) || status.getState().equals(QueryExecutionState.FAILED)));
 
         System.out.println("Query execution status: " + status.getState());
     }
