@@ -173,6 +173,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Creating Partition Schema ");
         ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("dev.snapshot.record.sagebase.org").withDelimiter("/");
         ListObjectsV2Result result = s3Client.listObjectsV2(listObjectsV2Request);
+        System.out.println("Common Prefix Size: "+result.getCommonPrefixes().size());
         for(String prefix: result.getCommonPrefixes()) {
             System.out.println("Prefix: "+prefix);
         }
