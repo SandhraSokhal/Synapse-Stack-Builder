@@ -170,31 +170,36 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         // Create the partitions
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
 */
+        Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
+                entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
+                entry("filedownloadrecord","filedownloadscsv"));
         System.out.println("Creating Partition Schema ");
-        getListObjectV2("", "dev.snapshot.record.sagebase.org", databaseName);
-
+        getListObjectV2("", "dev.snapshot.record.sagebase.org", databaseName, tableToMidMap);
+/*
         createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
                 "2023-08-29", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
         createBatchPartition(databaseName, "filedownloadscsv", "000000467",
                 "2023-08-29", "filedownloadrecord", "s3://dev.snapshot.record.sagebase.org");
+
+ */
         System.out.println("Partitions created successfully!");
     }
 
-    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName) {
+    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName, final Map<String, String> map) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
 
         if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
             int firstDelimiterIndex = prefix.indexOf("/");
-            final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
             int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
+            final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
             final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
             final String recordDate = prefix.substring(midDelimiterIndex+1, prefix.length()-1 );
-            System.out.println(prefix+" -> " + String.join("  ", releaseNumber, midPath, recordDate));
+            createBatchPartition(databaseName, map.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
         }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
-                getListObjectV2(newPath, bucketName,databaseName);
+                getListObjectV2(newPath, bucketName,databaseName,map);
             }
         }
     }
@@ -210,29 +215,13 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     }
 
     private GetTableResult getCurrentSchema(final String databaseName, final String tableName) {
-        System.out.println("Creating current Schema with databaseName: "+databaseName +" and tableName: " +tableName);
         final GetTableRequest getTableRequest = new GetTableRequest().withDatabaseName(databaseName).withName(tableName);
-        if(awsGlue == null) {
-            System.out.println("AWS Glue is null");
-        }
         return awsGlue.getTable(getTableRequest);
     }
     private StorageDescriptor createStorageDescriptor(final String databaseName, final String tableName,
                                                       final String releaseNumber, final String recordDate,
                                                       final String midPath, final String s3Location) {
-        System.out.println("Creating Storage Descriptor");
         final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
-        if(getTableResult == null) {
-            System.out.println("Table result null");
-        } else {
-            System.out.println("Table result not null");
-            if(getTableResult.getTable()!=null) {
-                System.out.println(getTableResult.getTable());
-            } else {
-                System.out.println("Table is null");
-            }
-        }
-        System.out.println("Current Table Schema: "+ getTableResult.toString());
         final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
         return new StorageDescriptor()
                 .withLocation(getS3PartitionLocation(s3Location,releaseNumber, recordDate, midPath))
@@ -246,11 +235,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                                       final String recordDate, final String midPath, final String s3Location) {
         final StorageDescriptor storageDescriptor = createStorageDescriptor(databaseName, tableName, releaseNumber,
                                                                             recordDate, midPath, s3Location);
-        System.out.println("Completed Storage Descriptor");
         final PartitionInput partitionInput = new PartitionInput()
                                                 .withValues(releaseNumber,recordDate)
                                                 .withStorageDescriptor(storageDescriptor);
-        System.out.println("Creating BatchPartitionRequest");
         final BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
                                                                             .withDatabaseName(databaseName)
                                                                             .withTableName(tableName)
