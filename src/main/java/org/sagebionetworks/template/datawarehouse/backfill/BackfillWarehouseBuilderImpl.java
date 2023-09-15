@@ -47,6 +47,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -156,7 +158,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     }
 
     private void getAthenaResult(){
-        String query = "select * from dev469filedownloadsrecords limit 5";
+        String query = "select instance,min(year) as minyear, max(year) as maxyear, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year in('2022','2023') group by instance ";
         QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
 
         // Create a ResultConfiguration
@@ -214,13 +216,31 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             System.out.print(metadata.getColumnInfo().get(i)+" \t");
         }
         System.out.println();
+        Map<String, List<String>> inputs = new HashMap<>();
+
         // Process and print the results
         for (Row row : queryResultsResponse.getResultSet().getRows()) {
-            for (Datum datum : row.getData()) {
-                System.out.print(datum.getVarCharValue() + "\t");
-            }
-            System.out.println();
+            String instance = getColumnValue(row.getData().get(0));
+            String minYear = getColumnValue(row.getData().get(1));
+            String maxYear =  getColumnValue(row.getData().get(2));
+            String minMonth = getColumnValue(row.getData().get(3));
+            String maxMonth =  getColumnValue(row.getData().get(4));
+            String minDay = getColumnValue(row.getData().get(5));
+            String maxDay =  getColumnValue(row.getData().get(6));
+            String startDate = String.join("-", minYear,minMonth,minDay);
+            String endDate = String.join("-", maxYear,maxMonth,maxDay);
+            inputs.put(instance, Arrays.asList(startDate, endDate));
         }
+        System.out.println("print input list");
+        for (Map.Entry<String, List<String>> entry : inputs.entrySet()) {
+            System.out.println(entry.getKey() + ":" + entry.getValue().toString());
+        }
+    }
+    private static String getColumnValue(Datum datum) {
+        if (datum != null && datum.getVarCharValue() != null) {
+            return datum.getVarCharValue();
+        }
+        return "";
     }
     public void getListObjectV2(final String prefix, final String bucketName, final String databaseName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
@@ -331,5 +351,84 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             zipFile.delete();
         }
         return s3ScriptsPath;
+    }
+}
+
+class CustomRow {
+    private String instance;
+    private String minyear;
+    private String maxyear;
+    private String minmonth;
+    private String maxmonth;
+    private String minday;
+    private String maxday;
+
+    public String getInstance() {
+        return instance;
+    }
+
+    public void setInstance(String instance) {
+        this.instance = instance;
+    }
+
+    public String getMinyear() {
+        return minyear;
+    }
+
+    public void setMinyear(String minyear) {
+        this.minyear = minyear;
+    }
+
+    public String getMaxyear() {
+        return maxyear;
+    }
+
+    public void setMaxyear(String maxyear) {
+        this.maxyear = maxyear;
+    }
+
+    public String getMinmonth() {
+        return minmonth;
+    }
+
+    public void setMinmonth(String minmonth) {
+        this.minmonth = minmonth;
+    }
+
+    public String getMaxmonth() {
+        return maxmonth;
+    }
+
+    public void setMaxmonth(String maxmonth) {
+        this.maxmonth = maxmonth;
+    }
+
+    public String getMinday() {
+        return minday;
+    }
+
+    public void setMinday(String minday) {
+        this.minday = minday;
+    }
+
+    public String getMaxday() {
+        return maxday;
+    }
+
+    public void setMaxday(String maxday) {
+        this.maxday = maxday;
+    }
+
+    @Override
+    public String toString() {
+        return "CustomRow{" +
+                "instance='" + instance + '\'' +
+                ", minyear='" + minyear + '\'' +
+                ", maxyear='" + maxyear + '\'' +
+                ", minmonth='" + minmonth + '\'' +
+                ", maxmonth='" + maxmonth + '\'' +
+                ", minday='" + minday + '\'' +
+                ", maxday='" + maxday + '\'' +
+                '}';
     }
 }
