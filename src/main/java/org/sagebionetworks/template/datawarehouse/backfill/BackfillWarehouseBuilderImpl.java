@@ -8,7 +8,6 @@ import com.amazonaws.services.athena.model.GetQueryExecutionResult;
 import com.amazonaws.services.athena.model.GetQueryResultsRequest;
 import com.amazonaws.services.athena.model.GetQueryResultsResult;
 import com.amazonaws.services.athena.model.QueryExecutionContext;
-import com.amazonaws.services.athena.model.QueryExecutionState;
 import com.amazonaws.services.athena.model.QueryExecutionStatus;
 import com.amazonaws.services.athena.model.ResultConfiguration;
 import com.amazonaws.services.athena.model.ResultSetMetadata;
@@ -197,7 +196,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        } while (!(status.getState().equals(QueryExecutionState.SUCCEEDED) || status.getState().equals(QueryExecutionState.FAILED)));
+        } while (!(status.getState().equals("SUCCEEDED") || status.getState().equals("FAILED")));
 
         System.out.println("Query execution status: " + status.getState());
     }
