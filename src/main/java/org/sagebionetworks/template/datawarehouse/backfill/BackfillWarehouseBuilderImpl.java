@@ -171,7 +171,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
 */
         System.out.println("Creating Partition Schema ");
-        getListObjectV2("", "dev.snapshot.record.sagebase.org");
+        getListObjectV2("", "dev.snapshot.record.sagebase.org", databaseName);
 
         createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
                 "2023-08-29", "bulkfiledownloadresponse", "s3://dev.snapshot.record.sagebase.org");
@@ -180,13 +180,21 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Partitions created successfully!");
     }
 
-    public void getListObjectV2(final String prefix, final String bucketName) {
+    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
+
+        if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
+            int firstDelimiterIndex = prefix.indexOf("/");
+            final String releaseNumber = prefix.substring(0, prefix.indexOf("/"));
+            int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
+            final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
+            final String recordDate = prefix.substring(prefix.indexOf("/", midDelimiterIndex+1), prefix.length()-1 );
+            System.out.println(String.join("  ", releaseNumber, midPath, recordDate));
+        }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
-                System.out.println(newPath);
-                getListObjectV2(newPath, bucketName);
+                getListObjectV2(newPath, bucketName,databaseName);
             }
         }
     }
