@@ -193,6 +193,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             status = queryExecution.getQueryExecution().getStatus();
             // Sleep for a few seconds before checking the status again
             try {
+                System.out.println(status.getState());
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
