@@ -171,7 +171,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
 */
         System.out.println("Creating Partition Schema ");
-        ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("s3://dev.snapshot.record.sagebase.org");
+        ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("dev.snapshot.record.sagebase.org").withDelimiter("/");
         ListObjectsV2Result result = s3Client.listObjectsV2(listObjectsV2Request);
         for(String prefix: result.getCommonPrefixes()) {
             System.out.println("Prefix: "+prefix);
