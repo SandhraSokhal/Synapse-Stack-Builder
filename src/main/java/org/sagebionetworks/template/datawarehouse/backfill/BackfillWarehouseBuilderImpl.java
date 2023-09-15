@@ -191,7 +191,16 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                                                       final String midPath, final String s3Location) {
         System.out.println("Creating Storage Descriptor");
         final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
-
+        if(getTableResult == null) {
+            System.out.println("Table result null");
+        } else {
+            System.out.println("Table result not null");
+            if(getTableResult.getTable()!=null) {
+                System.out.println(getTableResult.getTable());
+            } else {
+                System.out.println("Table is null");
+            }
+        }
         System.out.println("Current Table Schema: "+ getTableResult.toString());
         final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
         return new StorageDescriptor()
