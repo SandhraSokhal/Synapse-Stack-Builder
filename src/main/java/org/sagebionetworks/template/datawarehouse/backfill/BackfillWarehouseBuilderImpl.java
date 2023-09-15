@@ -174,7 +174,6 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withBucketName("s3://dev.snapshot.record.sagebase.org");
         ListObjectsV2Result result = s3Client.listObjectsV2(listObjectsV2Request);
         for(String prefix: result.getCommonPrefixes()) {
-            result.get
             System.out.println("Prefix: "+prefix);
         }
         createBatchPartition(databaseName, "bulkfiledownloadscsv", "000000467",
