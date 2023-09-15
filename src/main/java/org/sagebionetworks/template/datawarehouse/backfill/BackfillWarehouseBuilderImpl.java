@@ -183,12 +183,10 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     public void getListObjectV2(final String prefix, final String bucketName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
-        for(String newPath: s3ObjectResult.getCommonPrefixes()) {
-            System.out.println(newPath);
-            final ListObjectsV2Request listObjectsV2Request2 = new ListObjectsV2Request().withPrefix(newPath).withBucketName(bucketName).withDelimiter("/");
-            final ListObjectsV2Result s3ObjectResult2 = s3Client.listObjectsV2(listObjectsV2Request2);
-            for(String path2 : s3ObjectResult2.getCommonPrefixes()) {
-                System.out.println("path2: "+path2);
+        if(s3ObjectResult != null) {
+            for (String newPath : s3ObjectResult.getCommonPrefixes()) {
+                System.out.println("Path: " +newPath);
+                getListObjectV2(newPath, bucketName);
             }
         }
     }
