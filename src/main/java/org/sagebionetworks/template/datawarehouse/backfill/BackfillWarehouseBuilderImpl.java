@@ -7,8 +7,10 @@ import com.amazonaws.services.glue.model.BatchCreatePartitionRequest;
 import com.amazonaws.services.glue.model.GetTableRequest;
 import com.amazonaws.services.glue.model.GetTableResult;
 import com.amazonaws.services.glue.model.PartitionInput;
+import com.amazonaws.services.glue.model.StartJobRunRequest;
 import com.amazonaws.services.glue.model.StorageDescriptor;
 import com.amazonaws.services.s3.AmazonS3;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.logging.log4j.Logger;
 import org.apache.velocity.Template;
@@ -32,10 +34,12 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static java.util.Map.entry;
 import static org.sagebionetworks.template.Constants.CAPABILITY_NAMED_IAM;
 import static org.sagebionetworks.template.Constants.EXCEPTION_THROWER;
 import static org.sagebionetworks.template.Constants.GLUE_DATABASE_NAME;
@@ -178,6 +182,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     }
 
     private GetTableResult getCurrentSchema(final String databaseName, final String tableName) {
+        System.out.println("Creating current Schema with databaseName: "+databaseName +" and tableName: " +tableName);
         final GetTableRequest getTableRequest = new GetTableRequest().withDatabaseName(databaseName).withName(tableName);
         return awsGlue.getTable(getTableRequest);
     }
@@ -186,6 +191,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                                                       final String midPath, final String s3Location) {
         System.out.println("Creating Storage Descriptor");
         final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
+
         System.out.println("Current Table Schema: "+ getTableResult.toString());
         final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
         return new StorageDescriptor()
@@ -211,6 +217,25 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                                                                             .withPartitionInputList(partitionInput);
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
         System.out.println("Partition created successfully");
+    }
+
+    private void startAWSGLueJob(final String jobName, final String releaseNumber, final String stack, final String fileDownloadType,
+                                 final String sourceDataBaseName, final String sourceTableName,
+                                 final String destinationDatabaseName, final String destinationTableName,
+                                 final String startDate, final String endDate) {
+        final Map<String, String> argumentMap = ImmutableMap.ofEntries(
+                entry("--DESTINATION_DATABASE_NAME", destinationDatabaseName),
+                entry("--DESTINATION_TABLE_NAME",destinationTableName),
+                entry("--SOURCE_DATABASE_NAME",sourceDataBaseName),
+                entry("--SOURCE_TABLE_NAME",sourceTableName),
+                entry("--START_DATE",startDate),
+                entry("--END_DATE",endDate),
+                entry("--RELEASE_NUMBER",releaseNumber),
+                entry("--STACK",stack),
+                entry("--FILE_DOWNLOAD_TYPE",fileDownloadType));
+        final StartJobRunRequest startJobRunRequest = new StartJobRunRequest().withArguments(argumentMap).withJobName(jobName);
+        System.out.println("Starting Glue Job");
+        awsGlue.startJobRun(startJobRunRequest);
     }
     String copyArtifactFromGithub(String bucket) {
         String githubRepo = "Synapse-ETL-Jobs";
