@@ -72,7 +72,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     @Inject
     public BackfillWarehouseBuilderImpl(CloudFormationClient cloudFormationClient, VelocityEngine velocityEngine,
                                     Configuration config, LoggerFactory loggerFactory,
-                                    StackTagsProvider tagsProvider, EtlJobConfig etlJobConfig, ArtifactDownload downloader, AmazonS3 s3Client) {
+                                    StackTagsProvider tagsProvider, EtlJobConfig etlJobConfig, ArtifactDownload downloader, AmazonS3 s3Client, AWSGlue awsGlue) {
         this.cloudFormationClient = cloudFormationClient;
         this.velocityEngine = velocityEngine;
         this.config = config;
@@ -81,6 +81,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.etlJobConfig = etlJobConfig;
         this.downloader = downloader;
         this.s3Client = s3Client;
+        this.awsGlue = awsGlue;
     }
 
     // copy scripts to s3
