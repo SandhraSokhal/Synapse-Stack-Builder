@@ -183,12 +183,17 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     public void getListObjectV2(final String prefix, final String bucketName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
-        if(s3ObjectResult != null) {
-            for (String newPath : s3ObjectResult.getCommonPrefixes()) {
-                System.out.println("Path: " +newPath);
+        for (String newPath : s3ObjectResult.getCommonPrefixes()) {
+            if(checkToIterate(prefix, newPath)) {
+                System.out.println(newPath);
                 getListObjectV2(newPath, bucketName);
             }
         }
+    }
+
+    public boolean checkToIterate(final String prefix, final String newPath) {
+        if(prefix.length() == 0 && newPath.startsWith("000000")) return true;
+        return newPath.contains("bulkfiledownloadresponse") || newPath.contains("filedownloadrecord");
     }
     private String getS3PartitionLocation(final String s3Localtion, final String releaseNumber, final String recordDate, final String midPath) {
         final String partitionLocation =  String.join("/", s3Localtion, releaseNumber, midPath, recordDate);
