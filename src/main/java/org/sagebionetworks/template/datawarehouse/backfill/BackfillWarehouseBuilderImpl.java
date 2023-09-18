@@ -151,8 +151,8 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
 
-        createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", "backfill");
-        List<String> glueJobInputList = getAthenaResult(backfillYear);
+       // createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", "backfill");
+       // List<String> glueJobInputList = getAthenaResult(backfillYear);
         /*for( String instance :glueJobInputList){
             startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records",instance,"dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads",backfillStartDate,backfillEndDate);
         }*/
