@@ -75,6 +75,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String BACK_FILL_YEAR ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.year";
     private static final String BACK_FILL_MONTH ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.month";
     private static final String BACK_FILL_DAY ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.day";
+    private static final String BACKFILL_DATABASE_NAME = "backfill";
     private static final Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
             entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
             entry("filedownloadrecord","filedownloadscsv"));
@@ -125,6 +126,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         VelocityContext context = new VelocityContext();
 
         context.put(GLUE_DATABASE_NAME, databaseName);
+        context.put("backfillDatabaseName", BACKFILL_DATABASE_NAME);
         context.put(EXCEPTION_THROWER, new VelocityExceptionThrower());
         context.put(STACK, stack);
         context.put("scriptLocationPrefix", scriptLocationPrefix);

@@ -189,13 +189,24 @@
         }
       }
     },
+    "${glueDatabaseName}GlueDatabase": {
+        "Type":"AWS::Glue::Database",
+        "Properties":{
+            "CatalogId":{
+                "Ref":"AWS::AccountId"
+            },
+            "DatabaseInput": {
+                "Name": "${backfillDatabaseName}"
+            }
+        }
+    },
     "duplicatefiledownloadGlueTable": {
       "Type": "AWS::Glue::Table",
       "Properties": {
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "backfill",
+        "DatabaseName": "${backfillDatabaseName}",
         "TableInput": {
           "Name": "allfiledownloads",
           "Description" : "This table contains all the file downloads of old data-ware house downloads and kinesis stream download.",
@@ -259,7 +270,7 @@
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "backfill",
+        "DatabaseName": "${backfillDatabaseName}",
         "TableInput": {
           "Name": "bulkfiledownloadscsv",
           "Description" : "This table contains bulk file downloads of old data-ware house.",
@@ -311,7 +322,7 @@
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "backfill",
+        "DatabaseName": "${backfillDatabaseName}",
         "TableInput": {
           "Name": "filedownloadscsv",
           "Description" : "This table contains the file downloads of old data-ware house.",
@@ -363,7 +374,7 @@
             "CatalogId": {
               "Ref": "AWS::AccountId"
             },
-            "DatabaseName": "backfill",
+            "DatabaseName": "${backfillDatabaseName}",
             "TableInput": {
               "Name": "transformed_filedownloads",
               "Description" : "This table contains de-duplicated the file download.",
