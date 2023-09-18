@@ -139,7 +139,7 @@
           "--SOURCE_DATABASE_NAME": "${glueDatabaseName}",
           "--SOURCE_FILE_TABLE_NAME": "filedownloadscsv",
           "--SOURCE_BULK_TABLE_NAME": "bulkfiledownloadscsv",
-          "--DESTINATION_DATABASE_NAME": "${glueDatabaseName}",
+          "--DESTINATION_DATABASE_NAME": "backfill",
           "--DESTINATION_TABLE_NAME": "allfiledownloads",
           "--STACK": "${stack}",
           "--START_DATE": "2023-01-01",
@@ -170,46 +170,17 @@
           "--enable-metrics": "true",
           "--enable-spark-ui": "true",
           "--job-language": "python",
-          "--S3_SOURCE_PATH": "s3://${stack}.log.sagebase.org/fileDownloads/records/",
-          "--YEAR": "2023/",
-          "--MONTH": "08/",
-          "--DAY": "01/",
-          "--DATABASE_NAME": "${glueDatabaseName}",
-          "--TABLE_NAME": "allfiledownloads",
+          "--SOURCE_DATABASE_NAME": "${stack}470firehoselogs",
+          "--SOURCE_TABLE_NAME": "${stack}470filedownloadsrecords",
+          "--YEAR": "2023",
+          "--MONTH": "08",
+          "--DESTINATION_DATABASE_NAME": "backfill",
+          "--DESTINATION_TABLE_NAME": "allfiledownloads",
           "--extra-py-files": "${extraScripts}"
         },
         "Description": "This job back fill the kinesis file download records",
         "GlueVersion": "4.0",
         "Name": "${glueDatabaseName}_backfill_kinesis_filedownload_records",
-        "Role": {
-          "Fn::GetAtt": [
-            "AWSGlueJobRole",
-            "Arn"
-          ]
-        }
-      }
-    },
-    "processdeduplicatedfiledownloadrecordsGlueJob": {
-      "Type": "AWS::Glue::Job",
-      "Properties": {
-        "Command": {
-          "Name": "glueetl",
-          "ScriptLocation": "s3://${stack}.aws-glue.sagebase.org/scripts/backfill/process_backfill_file_download_records_after_deduplication.py"
-        },
-        "DefaultArguments": {
-          "--enable-continuous-cloudwatch-log": "true",
-          "--job-bookmark-option": "job-bookmark-enable",
-          "--enable-metrics": "true",
-          "--enable-spark-ui": "true",
-          "--job-language": "python",
-          "--S3_SOURCE_PATH": "s3://${stack}.log.sagebase.org/deduplicatedownloads/",
-          "--FORMAT": "json",
-          "--S3_DESTINATION_PATH": "s3://${stack}.log.sagebase.org/fileDownloadRecords/records/",
-          "--extra-py-files": "${extraScripts}"
-        },
-        "Description": "This job back fill the kinesis file download records",
-        "GlueVersion": "4.0",
-        "Name": "${glueDatabaseName}_process_duplicate_filedownload_records",
         "Role": {
           "Fn::GetAtt": [
             "AWSGlueJobRole",
@@ -224,7 +195,7 @@
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "${glueDatabaseName}",
+        "DatabaseName": "backfill",
         "TableInput": {
           "Name": "allfiledownloads",
           "Description" : "This table contains all the file downloads of old data-ware house downloads and kinesis stream download.",
@@ -288,7 +259,7 @@
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "${glueDatabaseName}",
+        "DatabaseName": "backfill",
         "TableInput": {
           "Name": "bulkfiledownloadscsv",
           "Description" : "This table contains bulk file downloads of old data-ware house.",
@@ -340,7 +311,7 @@
         "CatalogId": {
           "Ref": "AWS::AccountId"
         },
-        "DatabaseName": "${glueDatabaseName}",
+        "DatabaseName": "backfill",
         "TableInput": {
           "Name": "filedownloadscsv",
           "Description" : "This table contains the file downloads of old data-ware house.",
@@ -385,6 +356,68 @@
           "TableType": "EXTERNAL_TABLE"
         }
       }
-    }
+    },
+      "transformedfiledownloadGlueTable": {
+          "Type": "AWS::Glue::Table",
+          "Properties": {
+            "CatalogId": {
+              "Ref": "AWS::AccountId"
+            },
+            "DatabaseName": "backfill",
+            "TableInput": {
+              "Name": "transformed_filedownloads",
+              "Description" : "This table contains de-duplicated the file download.",
+              "StorageDescriptor" : {
+                "Columns": [
+                  {
+                    "Name": "timestamp",
+                    "Type": "bigint"
+                  },
+                  {
+                    "Name": "stack",
+                    "Type": "string"
+                  },
+                  {
+                     "Name": "instance",
+                     "Type": "string"
+                   },
+                   {
+                     "Name": "payload",
+                     "Type": "struct<
+                                  userId:bigint,
+                                  projectId:bigint,
+                                  fileHandleId:string,
+                                  downloadedFileHandleId:string,
+                                  associateType:string,
+                                  associateId:string>"
+                   }],
+                "SerdeInfo": {
+                  "SerializationLibrary": "org.apache.hive.hcatalog.data.JsonSerDe"
+                },
+                "Compressed": true,
+                "InputFormat": "org.apache.hadoop.mapred.TextInputFormat",
+                "OutputFormat": "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+                "Location": "s3://${stack}.log.sagebase.org/fileDownloadRecords/records_backfill/"
+              },
+              "PartitionKeys": [
+                {
+                  "Name": "year",
+                  "Type": "string"
+                },
+                {
+                  "Name": "month",
+                  "Type": "string"
+                },
+                {
+                  "Name": "day",
+                  "Type": "string"
+                }],
+              "Parameters": {
+                "write.compression": "GZIP"
+              },
+              "TableType": "EXTERNAL_TABLE"
+            }
+          }
+        }
     }
   }

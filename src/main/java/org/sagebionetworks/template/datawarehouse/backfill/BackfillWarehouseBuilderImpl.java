@@ -151,8 +151,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
 
-       // createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", databaseName);
-        createGluePartitionForKinesisData("fileDownloads/records", stack+".log.sagebase.org");
+        createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", "backfill");
         List<String> glueJobInputList = getAthenaResult(backfillYear);
         /*for( String instance :glueJobInputList){
             startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records",instance,"dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads",backfillStartDate,backfillEndDate);
@@ -261,42 +260,6 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 createGluePartitionForOldData(newPath, bucketName,databaseName);
             }
         }
-    }
-    public void createGluePartitionForKinesisData(String prefix,  String bucketName) {
-        final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
-        final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
-        if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
-            getpar(prefix, "dev470firehoselogs", bucketName);
-            return;
-        }
-        for (String newPath : s3ObjectResult.getCommonPrefixes()) {
-            createGluePartitionForKinesisData(newPath, bucketName);
-        }
-    }
-
-    private void getpar(String prefix,  String databaseName,  String bucketName) {
-        System.out.println("all partition path");
-          System.out.println(prefix);
-//        String[] allfolder = prefix.split("/");
-//        String day = getSubstring(allfolder[allfolder.length-1]);
-//        String month = getSubstring(allfolder[allfolder.length-2]);
-//        String year = getSubstring(allfolder[allfolder.length-3]);
-//
-//        final StorageDescriptor storageDescriptor = createStorageDescriptor(databaseName, "dev470filedownloadsrecords", year,
-//                month, day, "s3://"+bucketName);
-//        final PartitionInput partitionInput = new PartitionInput()
-//                .withValues(year, month, day)
-//                .withStorageDescriptor(storageDescriptor);
-//        final BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
-//                .withDatabaseName(databaseName)
-//                .withTableName("dev470filedownloadsrecords")
-//                .withPartitionInputList(partitionInput);
-//        awsGlue.batchCreatePartition(batchCreatePartitionRequest);
-    }
-    private String getSubstring(String path){
-        //year=2019
-        int index = path.indexOf("=");
-        return path.substring(index+1);
     }
 
     public void getBatchPartitionParametersAndCreateGluePartition(String prefix,  String databaseName,  String bucketName) {
