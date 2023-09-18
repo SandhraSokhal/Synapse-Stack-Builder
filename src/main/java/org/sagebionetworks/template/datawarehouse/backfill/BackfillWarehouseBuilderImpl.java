@@ -72,6 +72,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String SCRIPT_PATH_TPL = "%s-%s/src/scripts/backfill_jobs/";
     private static final String GS_EXPLODE_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_explode.py";
     private static final String GS_COMMON_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_common.py";
+    private static final String BACK_FILL_YEAR ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.year";
+    private static final String BACK_FILL_MONTH ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.month";
+    private static final String BACK_FILL_DAY ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.day";
     private static final Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
             entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
             entry("filedownloadrecord","filedownloadscsv"));
@@ -104,17 +107,14 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.athena = athena;
     }
 
-    // copy scripts to s3
-    // create a cloudfromation to create glue job and tables
-    // create partition on glue csv table
-    //run athena query to get year month day and instance
-    //run old datawarehouse job in a loop
-    // run kinesis job in a loop
-    // run step function or query to dedupe
-    // run another job
     @Override
     public void buildAndDeploy() {
         String databaseName = config.getProperty(PROPERTY_KEY_DATAWAREHOUSE_GLUE_DATABASE_NAME);
+        String backfillYear = config.getProperty(BACK_FILL_YEAR);
+        String backfillMonth = config.getProperty(BACK_FILL_MONTH);
+        String backfillDay = config.getProperty(BACK_FILL_DAY);
+        String backfillStartDate = String.join("-",backfillYear,"01","01");
+        String backfillEndDate = String.join("-",backfillYear,backfillMonth,backfillDay);
         ValidateArgument.requiredNotEmpty(databaseName, "The database name");
         databaseName = databaseName.toLowerCase();
 
@@ -151,14 +151,18 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
 
-       // getListObjectV2("", stack+ ".snapshot.record.sagebase.org", databaseName);
-       // Map<String, List<String>> glueJobInputList = getAthenaResult();
-        startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records","000000467","dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads","2023-01-01","2023-12-31");
+       // createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", databaseName);
+        createGluePartitionForKinesisData("fileDownloads/records", stack+".log.sagebase.org");
+        List<String> glueJobInputList = getAthenaResult(backfillYear);
+        /*for( String instance :glueJobInputList){
+            startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records",instance,"dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads",backfillStartDate,backfillEndDate);
+        }*/
+
         System.out.println("Partitions created successfully!");
     }
 
-    private Map<String, List<String>> getAthenaResult(){
-        String query = "select instance,min(year) as minyear, max(year) as maxyear, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year in('2022','2023') group by instance ";
+    private List<String> getAthenaResult(String year){
+        String query = "select instance,min(year) as minyear, max(year) as maxyear, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year='" + year + "' group by instance ";
         QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
 
         // Create a ResultConfiguration
@@ -203,7 +207,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Query execution status: " + status.getState());
     }
 
-    private static Map<String, List<String>> getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
+    private static List<String> getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
         GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
                 .withQueryExecutionId(queryExecutionId);
 
@@ -217,6 +221,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         }
         System.out.println();
         Map<String, List<String>> inputs = new HashMap<>();
+        List<String> instances = new ArrayList<>();
 
         // Process and print the results
         for (Row row : queryResultsResponse.getResultSet().getRows()) {
@@ -230,12 +235,13 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             String startDate = String.join("-", minYear,minMonth,minDay);
             String endDate = String.join("-", maxYear,maxMonth,maxDay);
             inputs.put(instance, Arrays.asList(startDate, endDate));
+            instances.add(instance);
         }
         System.out.println("print input list");
-        for (Map.Entry<String, List<String>> entry : inputs.entrySet()) {
-            System.out.println(entry.getKey() + ":" + entry.getValue().toString());
+        for (String ins : instances) {
+            System.out.println(ins);
         }
-        return inputs;
+        return instances;
     }
     private static String getColumnValue(Datum datum) {
         if (datum != null && datum.getVarCharValue() != null) {
@@ -243,26 +249,63 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         }
         return "";
     }
-    public void getListObjectV2(final String prefix, final String bucketName, final String databaseName) {
+    public void createGluePartitionForOldData(final String prefix, final String bucketName, final String databaseName) {
         final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
         final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
         if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
-            getBatchPartitionParametersAndCreateAthenaPartition(prefix, databaseName, bucketName);
+            getBatchPartitionParametersAndCreateGluePartition(prefix, databaseName, bucketName);
             return;
         }
         for (String newPath : s3ObjectResult.getCommonPrefixes()) {
             if(checkToIterate(prefix, newPath)) {
-                getListObjectV2(newPath, bucketName,databaseName);
+                createGluePartitionForOldData(newPath, bucketName,databaseName);
             }
         }
     }
+    public void createGluePartitionForKinesisData(String prefix,  String bucketName) {
+        final ListObjectsV2Request listObjectsV2Request = new ListObjectsV2Request().withPrefix(prefix).withBucketName(bucketName).withDelimiter("/");
+        final ListObjectsV2Result s3ObjectResult = s3Client.listObjectsV2(listObjectsV2Request);
+        if(s3ObjectResult == null || s3ObjectResult.getCommonPrefixes().size() == 0) {
+            getpar(prefix, "dev470firehoselogs", bucketName);
+            return;
+        }
+        for (String newPath : s3ObjectResult.getCommonPrefixes()) {
+            createGluePartitionForKinesisData(newPath, bucketName);
+        }
+    }
 
-    public void getBatchPartitionParametersAndCreateAthenaPartition(final String prefix, final String databaseName, final String bucketName) {
+    private void getpar(String prefix,  String databaseName,  String bucketName) {
+        System.out.println("all partition path");
+          System.out.println(prefix);
+//        String[] allfolder = prefix.split("/");
+//        String day = getSubstring(allfolder[allfolder.length-1]);
+//        String month = getSubstring(allfolder[allfolder.length-2]);
+//        String year = getSubstring(allfolder[allfolder.length-3]);
+//
+//        final StorageDescriptor storageDescriptor = createStorageDescriptor(databaseName, "dev470filedownloadsrecords", year,
+//                month, day, "s3://"+bucketName);
+//        final PartitionInput partitionInput = new PartitionInput()
+//                .withValues(year, month, day)
+//                .withStorageDescriptor(storageDescriptor);
+//        final BatchCreatePartitionRequest batchCreatePartitionRequest = new BatchCreatePartitionRequest()
+//                .withDatabaseName(databaseName)
+//                .withTableName("dev470filedownloadsrecords")
+//                .withPartitionInputList(partitionInput);
+//        awsGlue.batchCreatePartition(batchCreatePartitionRequest);
+    }
+    private String getSubstring(String path){
+        //year=2019
+        int index = path.indexOf("=");
+        return path.substring(index+1);
+    }
+
+    public void getBatchPartitionParametersAndCreateGluePartition(String prefix,  String databaseName,  String bucketName) {
         int firstDelimiterIndex = prefix.indexOf("/");
         int midDelimiterIndex = prefix.indexOf("/", firstDelimiterIndex+1);
         final String releaseNumber = prefix.substring(0, firstDelimiterIndex);
         final String midPath = prefix.substring(firstDelimiterIndex+1, midDelimiterIndex);
         final String recordDate = prefix.substring(midDelimiterIndex+1, prefix.length()-1 );
+
         createBatchPartition(databaseName, tableToMidMap.get(midPath), releaseNumber, recordDate, midPath, "s3://"+bucketName);
     }
 
@@ -287,6 +330,19 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
         return new StorageDescriptor()
                 .withLocation(getS3PartitionLocation(s3Location,releaseNumber, recordDate, midPath))
+                .withInputFormat(currentTableStorageDescriptor.getInputFormat())
+                .withOutputFormat(currentTableStorageDescriptor.getOutputFormat())
+                .withSerdeInfo(currentTableStorageDescriptor.getSerdeInfo());
+
+    }
+
+    private StorageDescriptor createStorageDescriptor1( String databaseName,  String tableName,
+                                                       String year, String month,String day,  String s3Location) {
+        final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
+        final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
+        final String partitionLocation =  String.join("/", s3Location, year, month, day);
+        return new StorageDescriptor()
+                .withLocation(partitionLocation)
                 .withInputFormat(currentTableStorageDescriptor.getInputFormat())
                 .withOutputFormat(currentTableStorageDescriptor.getOutputFormat())
                 .withSerdeInfo(currentTableStorageDescriptor.getSerdeInfo());
