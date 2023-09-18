@@ -383,13 +383,7 @@
                    },
                    {
                      "Name": "payload",
-                     "Type": "struct<
-                                  userId:bigint,
-                                  projectId:bigint,
-                                  fileHandleId:string,
-                                  downloadedFileHandleId:string,
-                                  associateType:string,
-                                  associateId:string>"
+                     "Type": "struct<userId:bigint,projectId:bigint,fileHandleId:string,downloadedFileHandleId:string,associateType:string,associateId:string>"
                    }],
                 "SerdeInfo": {
                   "SerializationLibrary": "org.apache.hive.hcatalog.data.JsonSerDe"
