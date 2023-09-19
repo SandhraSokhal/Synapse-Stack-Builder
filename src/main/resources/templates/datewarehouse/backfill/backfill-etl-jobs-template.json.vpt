@@ -122,6 +122,17 @@
         ]
       }
     },
+    "${backfillDatabaseName}GlueDatabase": {
+        "Type":"AWS::Glue::Database",
+        "Properties":{
+            "CatalogId":{
+                "Ref":"AWS::AccountId"
+            },
+            "DatabaseInput": {
+                "Name": "${backfillDatabaseName}"
+            }
+        }
+    },
     "backfillolddatawarehousefiledownloadrecordsGlueJob": {
       "Type": "AWS::Glue::Job",
       "Properties": {
@@ -188,17 +199,6 @@
           ]
         }
       }
-    },
-    "${glueDatabaseName}GlueDatabase": {
-        "Type":"AWS::Glue::Database",
-        "Properties":{
-            "CatalogId":{
-                "Ref":"AWS::AccountId"
-            },
-            "DatabaseInput": {
-                "Name": "${backfillDatabaseName}"
-            }
-        }
     },
     "duplicatefiledownloadGlueTable": {
       "Type": "AWS::Glue::Table",
