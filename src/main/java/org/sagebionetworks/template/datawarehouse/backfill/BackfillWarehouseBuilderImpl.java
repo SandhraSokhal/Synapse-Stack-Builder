@@ -154,6 +154,12 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
+        try {
+            cloudFormationClient.waitForStackToComplete(stackName);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         String backfillBucket = String.format(BUCKET_NAME,stack);
         createGluePartitionForOldData("", backfillBucket, BACKFILL_DATABASE_NAME);
         Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack);
