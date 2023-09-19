@@ -60,6 +60,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String BACK_FILL_YEAR ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.year";
     private static final String FIREHOSE_DATABASE_NAME ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.firehouse.database.name";
     private static final String FIREHOSE_TABLE_NAME ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.firehouse.table.name";
+    private static final String ATHENA_QUERY_LOCATION = "org.sagebionetworks.synapse.datawarehouse.glue.backfill.athena.query.location";
     private static final String BACKFILL_DATABASE_NAME = "backfill";
     private static final String BUCKET_NAME = "%s.snapshot.record.sagebase.org";
     private static final String BULK_FILE_DOWNLOAD_FOLDER_NAME = "bulkfiledownloadresponse";
@@ -161,15 +162,16 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
        startKinesisBackFillAWSGLueJob(databaseName+"_backfill_kinesis_filedownload_records", BACKFILL_DATABASE_NAME,
                stack, ALL_FILE_DOWNLOAD_TABLE_NAME, firehoseDatabaseName,firehoseTableName, backfillYear);*/
         String stack = config.getProperty(PROPERTY_KEY_STACK);
-        Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack);
+        String athenaQueryLocation = config.getProperty(ATHENA_QUERY_LOCATION);
+        Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack, firehoseDatabaseName, firehoseTableName,athenaQueryLocation);
     }
 
-    private Map<String, List<String>> getAthenaQueryResult(String year, String stack){
-        String query = "select instance, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year='" + year + "' group by instance ";
-        QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
+    private Map<String, List<String>> getAthenaQueryResult(String year, String stack, String database, String table, String location){
+        String query = "select instance, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from" + table + " where year='" + year + "' group by instance ";
+        QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase(database);
 
         // Create a ResultConfiguration
-        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://"+ stack +".log.sagebase.org/accessRecordtest/");
+        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation(location);
 
         // Create a StartQueryExecutionRequest
         StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
