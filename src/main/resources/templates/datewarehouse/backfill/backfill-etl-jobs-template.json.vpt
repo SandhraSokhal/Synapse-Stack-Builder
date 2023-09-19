@@ -138,9 +138,6 @@
       "Properties": {
         "Command": {
           "Name": "glueetl",
-          "ExecutionProperty":{
-          "MaxConcurrentRuns" : 100
-          },
           "ScriptLocation": "s3://${stack}.aws-glue.sagebase.org/scripts/backfill/backfill_old_dataware_house_file_download_records.py"
         },
         "DefaultArguments": {
@@ -161,6 +158,9 @@
           "--extra-py-files": "${extraScripts}"
         },
         "Description": "This job back fill the old data-ware house file download records",
+        "ExecutionProperty": {
+          "MaxConcurrentRuns" : 100
+          },
         "GlueVersion": "4.0",
         "Name": "${glueDatabaseName}_backfill_old_datawarehouse_filedownload_records",
         "Role": {
