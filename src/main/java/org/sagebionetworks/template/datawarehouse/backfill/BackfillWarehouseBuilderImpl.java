@@ -26,42 +26,28 @@ import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import org.apache.logging.log4j.Logger;
-import org.apache.velocity.Template;
-import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.json.JSONObject;
 import org.sagebionetworks.template.CloudFormationClient;
-import org.sagebionetworks.template.CreateOrUpdateStackRequest;
 import org.sagebionetworks.template.LoggerFactory;
 import org.sagebionetworks.template.StackTagsProvider;
 import org.sagebionetworks.template.config.Configuration;
 import org.sagebionetworks.template.datawarehouse.DataWarehouseBuilderImpl;
 import org.sagebionetworks.template.datawarehouse.EtlJobConfig;
-import org.sagebionetworks.template.repo.VelocityExceptionThrower;
 import org.sagebionetworks.template.utils.ArtifactDownload;
-import org.sagebionetworks.util.ValidateArgument;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static java.util.Map.entry;
-import static org.sagebionetworks.template.Constants.CAPABILITY_NAMED_IAM;
-import static org.sagebionetworks.template.Constants.EXCEPTION_THROWER;
-import static org.sagebionetworks.template.Constants.GLUE_DATABASE_NAME;
-import static org.sagebionetworks.template.Constants.JSON_INDENT;
 import static org.sagebionetworks.template.Constants.PROPERTY_KEY_DATAWAREHOUSE_GLUE_DATABASE_NAME;
 import static org.sagebionetworks.template.Constants.PROPERTY_KEY_STACK;
-import static org.sagebionetworks.template.Constants.STACK;
 
 public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String S3_GLUE_BUCKET = "aws-glue.sagebase.org";
@@ -119,7 +105,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         String backfillYear = config.getProperty(BACK_FILL_YEAR);
         String firehoseDatabaseName = config.getProperty(FIREHOSE_DATABASE_NAME);
         String firehoseTableName = config.getProperty(FIREHOSE_TABLE_NAME);
-        ValidateArgument.requiredNotEmpty(databaseName, "The database name");
+        /*ValidateArgument.requiredNotEmpty(databaseName, "The database name");
         databaseName = databaseName.toLowerCase();
 
         String stack = config.getProperty(PROPERTY_KEY_STACK);
@@ -173,8 +159,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         }
 
        startKinesisBackFillAWSGLueJob(databaseName+"_backfill_kinesis_filedownload_records", BACKFILL_DATABASE_NAME,
-               stack, ALL_FILE_DOWNLOAD_TABLE_NAME, firehoseDatabaseName,firehoseTableName, backfillYear);
-
+               stack, ALL_FILE_DOWNLOAD_TABLE_NAME, firehoseDatabaseName,firehoseTableName, backfillYear);*/
+        String stack = config.getProperty(PROPERTY_KEY_STACK);
+        Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack);
     }
 
     private Map<String, List<String>> getAthenaQueryResult(String year, String stack){
@@ -228,8 +215,13 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         GetQueryResultsResult queryResultsResponse = athenaClient.getQueryResults(getQueryResultsRequest);
 
         Map<String, List<String>> glueJobInputList = new HashMap<>();
+        boolean firstRow = false;
 
         for (Row row : queryResultsResponse.getResultSet().getRows()) {
+            if(!firstRow){
+                firstRow = true;
+                continue;
+            }
             String instance = getColumnValue(row.getData().get(0));
             String minMonth = getColumnValue(row.getData().get(1));
             String maxMonth =  getColumnValue(row.getData().get(2));
@@ -237,9 +229,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             String maxDay =  getColumnValue(row.getData().get(4));
             String startDate = String.join("-", year,minMonth,minDay);
             String endDate = String.join("-", year,maxMonth,maxDay);
+            System.out.println("instance ->"+ instance);
             glueJobInputList.put(instance, Arrays.asList(startDate, endDate));
         }
-
         return glueJobInputList;
     }
     private static String getColumnValue(Datum datum) {
