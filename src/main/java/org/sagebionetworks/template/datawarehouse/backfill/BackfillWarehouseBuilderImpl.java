@@ -325,6 +325,11 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         final StartJobRunRequest startJobRunRequest = new StartJobRunRequest().withArguments(argumentMap).withJobName(jobName);
         System.out.println("Starting Glue Job");
         awsGlue.startJobRun(startJobRunRequest);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     private void startKinesisBackFillAWSGLueJob( String jobName,  String destinationDataBaseName,  String stack,  String destinationTableName,
                                                  String sourceDataBaseName,  String sourceTableName, String year) {
