@@ -10,7 +10,6 @@ import com.amazonaws.services.athena.model.GetQueryResultsResult;
 import com.amazonaws.services.athena.model.QueryExecutionContext;
 import com.amazonaws.services.athena.model.QueryExecutionStatus;
 import com.amazonaws.services.athena.model.ResultConfiguration;
-import com.amazonaws.services.athena.model.ResultSetMetadata;
 import com.amazonaws.services.athena.model.Row;
 import com.amazonaws.services.athena.model.StartQueryExecutionRequest;
 import com.amazonaws.services.athena.model.StartQueryExecutionResult;
@@ -73,12 +72,18 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String GS_EXPLODE_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_explode.py";
     private static final String GS_COMMON_SCRIPT = "s3://aws-glue-studio-transforms-510798373988-prod-us-east-1/gs_common.py";
     private static final String BACK_FILL_YEAR ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.year";
-    private static final String BACK_FILL_MONTH ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.month";
-    private static final String BACK_FILL_DAY ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.day";
+    private static final String FIREHOSE_DATABASE_NAME ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.firehouse.database.name";
+    private static final String FIREHOSE_TABLE_NAME ="org.sagebionetworks.synapse.datawarehouse.glue.backfill.firehouse.table.name";
     private static final String BACKFILL_DATABASE_NAME = "backfill";
+    private static final String BUCKET_NAME = "%s.snapshot.record.sagebase.org";
+    private static final String BULK_FILE_DOWNLOAD_FOLDER_NAME = "bulkfiledownloadresponse";
+    private static final String BULK_FILE_DOWNLOAD_TABLE_NAME = "bulkfiledownloadscsv";
+    private static final String FILE_DOWNLOAD_FOLDER_NAME = "filedownloadrecord";
+    private static final String FILE_DOWNLOAD_TABLE_NAME = "filedownloadscsv";
+    private static final String ALL_FILE_DOWNLOAD_TABLE_NAME = "allfiledownloads";
     private static final Map<String, String> tableToMidMap = ImmutableMap.ofEntries(
-            entry("bulkfiledownloadresponse","bulkfiledownloadscsv"),
-            entry("filedownloadrecord","filedownloadscsv"));
+            entry(BULK_FILE_DOWNLOAD_FOLDER_NAME,BULK_FILE_DOWNLOAD_TABLE_NAME),
+            entry(FILE_DOWNLOAD_FOLDER_NAME,FILE_DOWNLOAD_TABLE_NAME));
     private EtlJobConfig etlJobConfig;
     private ArtifactDownload downloader;
     private Configuration config;
@@ -112,15 +117,12 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     public void buildAndDeploy() {
         String databaseName = config.getProperty(PROPERTY_KEY_DATAWAREHOUSE_GLUE_DATABASE_NAME);
         String backfillYear = config.getProperty(BACK_FILL_YEAR);
-        String backfillMonth = config.getProperty(BACK_FILL_MONTH);
-        String backfillDay = config.getProperty(BACK_FILL_DAY);
-        String backfillStartDate = String.join("-",backfillYear,"01","01");
-        String backfillEndDate = String.join("-",backfillYear,backfillMonth,backfillDay);
         ValidateArgument.requiredNotEmpty(databaseName, "The database name");
         databaseName = databaseName.toLowerCase();
 
         String stack = config.getProperty(PROPERTY_KEY_STACK);
         String bucket = String.join(".", stack, S3_GLUE_BUCKET);
+       // String scriptLocationPrefix = bucket + "/" + copyArtifactFromGithub(bucket);
         String scriptLocationPrefix = bucket + "/" + copyArtifactFromGithub(bucket);
 
         VelocityContext context = new VelocityContext();
@@ -129,10 +131,10 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         context.put("backfillDatabaseName", BACKFILL_DATABASE_NAME);
         context.put(EXCEPTION_THROWER, new VelocityExceptionThrower());
         context.put(STACK, stack);
-        context.put("scriptLocationPrefix", scriptLocationPrefix);
-        String utilscript = "s3://"+ scriptLocationPrefix + "backfill_utils.py";
+        context.put("scriptLocationPrefix", stack+".aws-glue.sagebase.org/scripts/backfill/");
+        String utilScript = "s3://"+ scriptLocationPrefix + "backfill_utils.py";
         List<String> extraScripts = new ArrayList<>();
-        extraScripts.add(utilscript);
+        extraScripts.add(utilScript);
         extraScripts.add(GS_EXPLODE_SCRIPT);
         extraScripts.add(GS_COMMON_SCRIPT);
         context.put("extraScripts", String.join(",", extraScripts));
@@ -152,22 +154,26 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
+        String backfillBucket = String.format(BUCKET_NAME,stack);
+        createGluePartitionForOldData("", backfillBucket, BACKFILL_DATABASE_NAME);
+        Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack);
+       for(Map.Entry<String, List<String>> glueJobInput: glueJobInputList.entrySet()){
+            startOldDataWareHouseBackFillAWSGLueJob(databaseName + "_backfill_old_datawarehouse_filedownload_records",glueJobInput.getKey(),
+                    stack, BACKFILL_DATABASE_NAME,BULK_FILE_DOWNLOAD_TABLE_NAME,FILE_DOWNLOAD_TABLE_NAME,
+                    ALL_FILE_DOWNLOAD_TABLE_NAME,glueJobInput.getValue().get(0),glueJobInput.getValue().get(1));
+        }
 
-       // createGluePartitionForOldData("", stack+ ".snapshot.record.sagebase.org", "backfill");
-       // List<String> glueJobInputList = getAthenaResult(backfillYear);
-        /*for( String instance :glueJobInputList){
-            startAWSGLueJob("sandhra_backfill_old_datawarehouse_filedownload_records",instance,"dev", "sandhra","bulkfiledownloadscsv","filedownloadscsv","allfiledownloads",backfillStartDate,backfillEndDate);
-        }*/
+       startKinesisBackFillAWSGLueJob(databaseName+"_backfill_kinesis_filedownload_records", BACKFILL_DATABASE_NAME,
+               stack, ALL_FILE_DOWNLOAD_TABLE_NAME, FIREHOSE_DATABASE_NAME,FIREHOSE_TABLE_NAME, backfillYear);
 
-        System.out.println("Partitions created successfully!");
     }
 
-    private List<String> getAthenaResult(String year){
-        String query = "select instance,min(year) as minyear, max(year) as maxyear, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year='" + year + "' group by instance ";
+    private Map<String, List<String>> getAthenaQueryResult(String year, String stack){
+        String query = "select instance, min(month) as minmonth, max(month) as maxmonth, min(day) as minday, max(day) as maxday from dev469filedownloadsrecords where year='" + year + "' group by instance ";
         QueryExecutionContext queryExecutionContext = new QueryExecutionContext().withDatabase("dev469firehoselogs"); // Replace with your database name
 
         // Create a ResultConfiguration
-        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://dev.log.sagebase.org/accessRecordtest/");
+        ResultConfiguration resultConfiguration = new ResultConfiguration().withOutputLocation("s3://"+ stack +".log.sagebase.org/accessRecordtest/");
 
         // Create a StartQueryExecutionRequest
         StartQueryExecutionRequest startQueryExecutionRequest = new StartQueryExecutionRequest()
@@ -180,10 +186,9 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 
         // Get the query execution ID
         String queryExecutionId = startQueryExecutionResult.getQueryExecutionId();
-        System.out.println("execution id is : "+ queryExecutionId);
         // Wait for the query to complete (optional)
         waitForQueryCompletion(athena, queryExecutionId);
-        return getQueryResults(athena, queryExecutionId);
+        return getQueryResults(athena, queryExecutionId, year);
     }
 
     private static void waitForQueryCompletion(AmazonAthena athenaClient, String queryExecutionId) {
@@ -198,7 +203,6 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             status = queryExecution.getQueryExecution().getStatus();
             // Sleep for a few seconds before checking the status again
             try {
-                System.out.println(status.getState());
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -208,41 +212,26 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         System.out.println("Query execution status: " + status.getState());
     }
 
-    private static List<String> getQueryResults(AmazonAthena athenaClient, String queryExecutionId) {
+    private static Map<String, List<String>> getQueryResults(AmazonAthena athenaClient, String queryExecutionId, String year) {
         GetQueryResultsRequest getQueryResultsRequest = new GetQueryResultsRequest()
                 .withQueryExecutionId(queryExecutionId);
 
         GetQueryResultsResult queryResultsResponse = athenaClient.getQueryResults(getQueryResultsRequest);
 
+        Map<String, List<String>> glueJobInputList = new HashMap<>();
 
-        ResultSetMetadata metadata = queryResultsResponse.getResultSet().getResultSetMetadata();
-
-        for(int i = 0; i< metadata.getColumnInfo().size(); i++) {
-            System.out.print(metadata.getColumnInfo().get(i)+" \t");
-        }
-        System.out.println();
-        Map<String, List<String>> inputs = new HashMap<>();
-        List<String> instances = new ArrayList<>();
-
-        // Process and print the results
         for (Row row : queryResultsResponse.getResultSet().getRows()) {
             String instance = getColumnValue(row.getData().get(0));
-            String minYear = getColumnValue(row.getData().get(1));
-            String maxYear =  getColumnValue(row.getData().get(2));
-            String minMonth = getColumnValue(row.getData().get(3));
-            String maxMonth =  getColumnValue(row.getData().get(4));
-            String minDay = getColumnValue(row.getData().get(5));
-            String maxDay =  getColumnValue(row.getData().get(6));
-            String startDate = String.join("-", minYear,minMonth,minDay);
-            String endDate = String.join("-", maxYear,maxMonth,maxDay);
-            inputs.put(instance, Arrays.asList(startDate, endDate));
-            instances.add(instance);
+            String minMonth = getColumnValue(row.getData().get(1));
+            String maxMonth =  getColumnValue(row.getData().get(2));
+            String minDay = getColumnValue(row.getData().get(3));
+            String maxDay =  getColumnValue(row.getData().get(4));
+            String startDate = String.join("-", year,minMonth,minDay);
+            String endDate = String.join("-", year,maxMonth,maxDay);
+            glueJobInputList.put(instance, Arrays.asList(startDate, endDate));
         }
-        System.out.println("print input list");
-        for (String ins : instances) {
-            System.out.println(ins);
-        }
-        return instances;
+
+        return glueJobInputList;
     }
     private static String getColumnValue(Datum datum) {
         if (datum != null && datum.getVarCharValue() != null) {
@@ -276,12 +265,10 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 
     public boolean checkToIterate(final String prefix, final String newPath) {
         if(prefix.length() == 0 && newPath.startsWith("000000")) return true;
-        return newPath.contains("bulkfiledownloadresponse") || newPath.contains("filedownloadrecord");
+        return newPath.contains(BULK_FILE_DOWNLOAD_FOLDER_NAME) || newPath.contains(FILE_DOWNLOAD_FOLDER_NAME);
     }
     private String getS3PartitionLocation(final String s3Localtion, final String releaseNumber, final String recordDate, final String midPath) {
-        final String partitionLocation =  String.join("/", s3Localtion, releaseNumber, midPath, recordDate);
-        System.out.println("Partition Location: "+partitionLocation);
-        return partitionLocation;
+        return String.join("/", s3Localtion, releaseNumber, midPath, recordDate);
     }
 
     private GetTableResult getCurrentSchema(final String databaseName, final String tableName) {
@@ -301,19 +288,6 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 
     }
 
-    private StorageDescriptor createStorageDescriptor1( String databaseName,  String tableName,
-                                                       String year, String month,String day,  String s3Location) {
-        final GetTableResult getTableResult = getCurrentSchema(databaseName, tableName);
-        final StorageDescriptor currentTableStorageDescriptor = getTableResult.getTable().getStorageDescriptor();
-        final String partitionLocation =  String.join("/", s3Location, year, month, day);
-        return new StorageDescriptor()
-                .withLocation(partitionLocation)
-                .withInputFormat(currentTableStorageDescriptor.getInputFormat())
-                .withOutputFormat(currentTableStorageDescriptor.getOutputFormat())
-                .withSerdeInfo(currentTableStorageDescriptor.getSerdeInfo());
-
-    }
-
     private void createBatchPartition(final String databaseName, final String tableName, final String releaseNumber,
                                       final String recordDate, final String midPath, final String s3Location) {
         final StorageDescriptor storageDescriptor = createStorageDescriptor(databaseName, tableName, releaseNumber,
@@ -326,12 +300,11 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                                                                             .withTableName(tableName)
                                                                             .withPartitionInputList(partitionInput);
         awsGlue.batchCreatePartition(batchCreatePartitionRequest);
-        System.out.println("Partition created successfully");
     }
 
-    private void startAWSGLueJob(final String jobName, final String releaseNumber, final String stack, final String dataBaseName,
-                                 final String sourceBulkTableName, final String sourceFileTableName,
-                                 final String destinationTableName, final String startDate, final String endDate) {
+    private void startOldDataWareHouseBackFillAWSGLueJob(final String jobName, final String releaseNumber, final String stack, final String dataBaseName,
+                                                         final String sourceBulkTableName, final String sourceFileTableName,
+                                                         final String destinationTableName, final String startDate, final String endDate) {
         final Map<String, String> argumentMap = ImmutableMap.ofEntries(
                 entry("--DESTINATION_DATABASE_NAME", dataBaseName),
                 entry("--DESTINATION_TABLE_NAME",destinationTableName),
@@ -344,6 +317,18 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
                 entry("--STACK",stack));
         final StartJobRunRequest startJobRunRequest = new StartJobRunRequest().withArguments(argumentMap).withJobName(jobName);
         System.out.println("Starting Glue Job");
+        awsGlue.startJobRun(startJobRunRequest);
+    }
+    private void startKinesisBackFillAWSGLueJob( String jobName,  String destinationDataBaseName,  String stack,  String destinationTableName,
+                                                 String sourceDataBaseName,  String sourceTableName, String year) {
+        final Map<String, String> argumentMap = ImmutableMap.ofEntries(
+                entry("--DESTINATION_DATABASE_NAME", destinationDataBaseName),
+                entry("--DESTINATION_TABLE_NAME",destinationTableName),
+                entry("--SOURCE_DATABASE_NAME",sourceDataBaseName),
+                entry("--SOURCE_TABLE_NAME",sourceTableName),
+                entry("--YEAR", year),
+                entry("--STACK",stack));
+        final StartJobRunRequest startJobRunRequest = new StartJobRunRequest().withArguments(argumentMap).withJobName(jobName);
         awsGlue.startJobRun(startJobRunRequest);
     }
     String copyArtifactFromGithub(String bucket) {
