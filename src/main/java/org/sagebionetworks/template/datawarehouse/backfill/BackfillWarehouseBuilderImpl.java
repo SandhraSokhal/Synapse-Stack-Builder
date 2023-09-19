@@ -31,6 +31,7 @@ import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.json.JSONObject;
 import org.sagebionetworks.template.CloudFormationClient;
+import org.sagebionetworks.template.CreateOrUpdateStackRequest;
 import org.sagebionetworks.template.LoggerFactory;
 import org.sagebionetworks.template.StackTagsProvider;
 import org.sagebionetworks.template.config.Configuration;
@@ -54,6 +55,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static java.util.Map.entry;
+import static org.sagebionetworks.template.Constants.CAPABILITY_NAMED_IAM;
 import static org.sagebionetworks.template.Constants.EXCEPTION_THROWER;
 import static org.sagebionetworks.template.Constants.GLUE_DATABASE_NAME;
 import static org.sagebionetworks.template.Constants.JSON_INDENT;
@@ -151,7 +153,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         this.logger.info(resultJSON);
         // create or update the stack
         String stackName = new StringJoiner("-").add(stack).add(databaseName).add("backfill-etl-jobs").toString();
-        /*this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
+        this.cloudFormationClient.createOrUpdateStack(new CreateOrUpdateStackRequest().withStackName(stackName)
                 .withTemplateBody(resultJSON).withTags(tagsProvider.getStackTags())
                 .withCapabilities(CAPABILITY_NAMED_IAM));
         try {
@@ -168,7 +170,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
             startOldDataWareHouseBackFillAWSGLueJob(databaseName + "_backfill_old_datawarehouse_filedownload_records",glueJobInput.getKey(),
                     stack, BACKFILL_DATABASE_NAME,BULK_FILE_DOWNLOAD_TABLE_NAME,FILE_DOWNLOAD_TABLE_NAME,
                     ALL_FILE_DOWNLOAD_TABLE_NAME,glueJobInput.getValue().get(0),glueJobInput.getValue().get(1));
-        }*/
+        }
 
        startKinesisBackFillAWSGLueJob(databaseName+"_backfill_kinesis_filedownload_records", BACKFILL_DATABASE_NAME,
                stack, ALL_FILE_DOWNLOAD_TABLE_NAME, firehoseDatabaseName,firehoseTableName, backfillYear);
