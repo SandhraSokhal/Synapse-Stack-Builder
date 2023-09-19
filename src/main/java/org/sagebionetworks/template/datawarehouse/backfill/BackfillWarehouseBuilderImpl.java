@@ -123,7 +123,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         String stack = config.getProperty(PROPERTY_KEY_STACK);
         String bucket = String.join(".", stack, S3_GLUE_BUCKET);
        // String scriptLocationPrefix = bucket + "/" + copyArtifactFromGithub(bucket);
-        String scriptLocationPrefix = bucket + "/" + copyArtifactFromGithub(bucket);
+        String scriptLocationPrefix = bucket + "/scripts/backfill/";
 
         VelocityContext context = new VelocityContext();
 
@@ -131,7 +131,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         context.put("backfillDatabaseName", BACKFILL_DATABASE_NAME);
         context.put(EXCEPTION_THROWER, new VelocityExceptionThrower());
         context.put(STACK, stack);
-        context.put("scriptLocationPrefix", stack+".aws-glue.sagebase.org/scripts/backfill/");
+        context.put("scriptLocationPrefix", scriptLocationPrefix);
         String utilScript = "s3://"+ scriptLocationPrefix + "backfill_utils.py";
         List<String> extraScripts = new ArrayList<>();
         extraScripts.add(utilScript);
@@ -158,6 +158,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
         createGluePartitionForOldData("", backfillBucket, BACKFILL_DATABASE_NAME);
         Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack);
        for(Map.Entry<String, List<String>> glueJobInput: glueJobInputList.entrySet()){
+           System.out.println("release_number"+ glueJobInput.getKey());
             startOldDataWareHouseBackFillAWSGLueJob(databaseName + "_backfill_old_datawarehouse_filedownload_records",glueJobInput.getKey(),
                     stack, BACKFILL_DATABASE_NAME,BULK_FILE_DOWNLOAD_TABLE_NAME,FILE_DOWNLOAD_TABLE_NAME,
                     ALL_FILE_DOWNLOAD_TABLE_NAME,glueJobInput.getValue().get(0),glueJobInput.getValue().get(1));

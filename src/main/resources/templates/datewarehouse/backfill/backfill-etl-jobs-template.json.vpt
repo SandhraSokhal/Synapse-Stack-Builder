@@ -138,6 +138,9 @@
       "Properties": {
         "Command": {
           "Name": "glueetl",
+          "ExecutionProperty":{
+          "MaxConcurrentRuns" : 100
+          },
           "ScriptLocation": "s3://${stack}.aws-glue.sagebase.org/scripts/backfill/backfill_old_dataware_house_file_download_records.py"
         },
         "DefaultArguments": {
