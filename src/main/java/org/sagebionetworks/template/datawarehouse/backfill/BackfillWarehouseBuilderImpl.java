@@ -63,6 +63,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
     private static final String ATHENA_QUERY_LOCATION = "org.sagebionetworks.synapse.datawarehouse.glue.backfill.athena.query.location";
     private static final String BACKFILL_DATABASE_NAME = "backfill";
     private static final String BUCKET_NAME = "%s.snapshot.record.sagebase.org";
+    private static final String CREATE_PARTITION = "org.sagebionetworks.synapse.datawarehouse.glue.backfill.create.partition";
     private static final String BULK_FILE_DOWNLOAD_FOLDER_NAME = "bulkfiledownloadresponse";
     private static final String BULK_FILE_DOWNLOAD_TABLE_NAME = "bulkfiledownloadscsv";
     private static final String FILE_DOWNLOAD_FOLDER_NAME = "filedownloadrecord";
@@ -162,8 +163,16 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
        startKinesisBackFillAWSGLueJob(databaseName+"_backfill_kinesis_filedownload_records", BACKFILL_DATABASE_NAME,
                stack, ALL_FILE_DOWNLOAD_TABLE_NAME, firehoseDatabaseName,firehoseTableName, backfillYear);*/
         String stack = config.getProperty(PROPERTY_KEY_STACK);
+        boolean createPartition = config.getBooleanProperty(CREATE_PARTITION);
+        String backfillBucket = String.format(BUCKET_NAME,stack);
+        if(createPartition){
+            System.out.println("create parttion");
+            createGluePartitionForOldData("", backfillBucket, BACKFILL_DATABASE_NAME);
+        }
+
         String athenaQueryLocation = config.getProperty(ATHENA_QUERY_LOCATION);
         Map<String, List<String>> glueJobInputList = getAthenaQueryResult(backfillYear, stack, firehoseDatabaseName, firehoseTableName,athenaQueryLocation);
+        System.out.println("done");
     }
 
     private Map<String, List<String>> getAthenaQueryResult(String year, String stack, String database, String table, String location){
