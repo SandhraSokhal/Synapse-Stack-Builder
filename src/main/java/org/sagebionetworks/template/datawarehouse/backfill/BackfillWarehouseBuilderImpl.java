@@ -167,6 +167,7 @@ public class BackfillWarehouseBuilderImpl implements BackfillWarehouseBuilder {
 
         String backfillBucket = String.format(BUCKET_NAME,stack);
         boolean createPartition = config.getBooleanProperty(CREATE_PARTITION);
+        System.out.println("value is->"+ createPartition);
         if(createPartition){
             createGluePartitionForOldData("", backfillBucket, BACKFILL_DATABASE_NAME);
         }
