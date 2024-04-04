@@ -68,5 +68,46 @@
 			"Threshold" : 1,
 			"TreatMissingData": "notBreaching"
 		}
-	}
+	},
+    "${stack}${instance}IdgenActiveConnectionPoolExhaustedAlarm": {
+        "Type" : "AWS::CloudWatch::Alarm",
+        "Properties" : {
+            "ActionsEnabled" : true,
+            "AlarmActions" : [
+                {"Fn::ImportValue": "${globalResourcesExportPrefix}-NotificationTopic"}
+            ],
+            "AlarmDescription" : "Alert when idgen active connection pool is exhausted.",
+            "AlarmName" : "${stack}-${instance}-Idgen-Active-Connection-Pool-Exhausted",
+            "ComparisonOperator" : "GreaterThanOrEqualToThreshold",
+            "Id" : "IdgenActiveConnectionPool"
+            "Metrics" :[
+                {
+                    "Id":"CumulativeMetrics",
+                    "Expression": "SUM(METRICS('activeCount')",
+                    "Label": "ActiveCountForAllMetrics"
+
+                },{
+                    "Id":"activeCount",
+                    "MetricStat" : {
+                            "Metric" : {
+                                "Dimensions" : [
+                                {
+                                    "Name" : "dataSourceId",
+                                    "Value" : "idgen"
+                                }
+                            ],
+                            "MetricName" : "activeConnectionsCount",
+                            "Namespace" : "Workers-Database-${instance}",
+                            },
+                            "Period" : 120,
+                            "Stat" : "SAMPLE_COUNT"
+                        },
+                        "ReturnData": false
+                }
+            ]
+
+            "EvaluationPeriods" : 1,
+            "TreatMissingData": "notBreaching"
+        }
+    }
 #end
