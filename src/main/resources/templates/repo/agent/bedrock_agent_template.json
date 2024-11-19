@@ -149,7 +149,6 @@
 							},
 							"ParserMode": "DEFAULT",
 							"PromptCreationMode": "DEFAULT",
-							"PromptState": "ENABLED",
 							"PromptType" : "ORCHESTRATION"
 						}
 					]
