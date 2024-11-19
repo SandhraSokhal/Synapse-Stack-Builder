@@ -145,7 +145,7 @@
 					"PromptConfigurations": [
 						{
 							"InferenceConfiguration": {
-								"Temperature": 0.01
+								"Temperature": 1
 							}
 						}
 					]
