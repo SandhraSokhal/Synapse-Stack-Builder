@@ -148,6 +148,7 @@
 								"Temperature": 0
 							},
 							"PromptCreationMode": "OVERRIDDEN",
+							"PromptState": "ENABLED",
 							"PromptType" : "ORCHESTRATION"
 						}
 					]
