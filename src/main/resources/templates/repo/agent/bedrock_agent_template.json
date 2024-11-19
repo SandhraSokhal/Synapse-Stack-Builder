@@ -147,6 +147,7 @@
 							"InferenceConfiguration": {
 								"Temperature": 0
 							},
+							"PromptCreationMode": "OVERRIDDEN",
 							"PromptType" : "ORCHESTRATION"
 						}
 					]
