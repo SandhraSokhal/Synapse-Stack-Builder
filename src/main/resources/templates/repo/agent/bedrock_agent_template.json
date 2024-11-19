@@ -147,6 +147,7 @@
 							"InferenceConfiguration": {
 								"Temperature": 0
 							},
+							"ParserMode": "DEFAULT",
 							"PromptCreationMode": "OVERRIDDEN",
 							"PromptState": "ENABLED",
 							"PromptType" : "ORCHESTRATION"
