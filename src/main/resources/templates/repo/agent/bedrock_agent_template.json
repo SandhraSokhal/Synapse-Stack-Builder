@@ -148,7 +148,7 @@
 								"Temperature": 0
 							},
 							"ParserMode": "DEFAULT",
-							"PromptCreationMode": "DEFAULT",
+							"PromptCreationMode": "OVERRIDDEN",
 							"PromptType" : "ORCHESTRATION"
 						}
 					]
