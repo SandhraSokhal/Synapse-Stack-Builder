@@ -145,7 +145,7 @@
 					"PromptConfigurations": [
 						{
 							"InferenceConfiguration": {
-								"Temperature": 1
+								"Temperature": 0
 							},
 							"PromptType" : "ORCHESTRATION"
 						}
